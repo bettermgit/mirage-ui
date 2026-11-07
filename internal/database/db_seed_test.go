@@ -78,6 +78,62 @@ func TestInitDBLeavesNoGuessableCredential(t *testing.T) {
 	}
 }
 
+// Headless first installs (systemd env, docker -e) seed credentials once on an
+// empty users table; nothing here ever rewrites an existing operator account.
+func TestEnsureFirstUserSeedsFromEnv(t *testing.T) {
+	if err := InitDB(filepath.Join(t.TempDir(), "x-ui.db")); err != nil {
+		t.Fatalf("InitDB: %v", err)
+	}
+	t.Cleanup(func() { _ = CloseDB() })
+
+	t.Setenv("XUI_USERNAME", "admin")
+	t.Setenv("XUI_PASSWORD", "Sup3rSecret!9")
+	username, password, err := EnsureFirstUser()
+	if err != nil {
+		t.Fatalf("EnsureFirstUser: %v", err)
+	}
+	if username != "" || password != "" {
+		t.Fatalf("env-seeded first user returned %q/%q; want nothing logged", username, password)
+	}
+	var stored model.User
+	if err := db.First(&stored).Error; err != nil {
+		t.Fatalf("read user: %v", err)
+	}
+	if stored.Username != "admin" || !crypto.CheckPasswordHash(stored.Password, "Sup3rSecret!9") {
+		t.Fatalf("stored user %q does not log in with the seeded password", stored.Username)
+	}
+
+	t.Setenv("XUI_USERNAME", "attacker")
+	againUser, againPass, err := EnsureFirstUser()
+	if err != nil || againUser != "" || againPass != "" {
+		t.Fatalf("second EnsureFirstUser = %q/%q/%v; want nothing created", againUser, againPass, err)
+	}
+	var count int64
+	if err := db.Model(&model.User{}).Count(&count).Error; err != nil || count != 1 {
+		t.Fatalf("users = %d (%v), want 1", count, err)
+	}
+	if err := db.First(&stored).Error; err != nil || stored.Username != "admin" {
+		t.Fatalf("existing user changed to %q (%v)", stored.Username, err)
+	}
+}
+
+func TestEnsureFirstUserIgnoresHalfSeededEnv(t *testing.T) {
+	if err := InitDB(filepath.Join(t.TempDir(), "x-ui.db")); err != nil {
+		t.Fatalf("InitDB: %v", err)
+	}
+	t.Cleanup(func() { _ = CloseDB() })
+
+	t.Setenv("XUI_USERNAME", "admin")
+	t.Setenv("XUI_PASSWORD", "")
+	username, password, err := EnsureFirstUser()
+	if err != nil {
+		t.Fatalf("EnsureFirstUser: %v", err)
+	}
+	if username == "" || password == "" {
+		t.Fatalf("half-seeded env returned %q/%q; want fully generated credentials", username, password)
+	}
+}
+
 // The server prints what EnsureFirstUser returns as the only copy of the first
 // login, so it must be the stored credential, and a restart must not mint another.
 func TestEnsureFirstUserCreatesOneWorkingCredential(t *testing.T) {

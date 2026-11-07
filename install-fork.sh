@@ -8,17 +8,24 @@
 #   curl -fsSL https://raw.githubusercontent.com/<you>/mirage-ui/main/install-fork.sh | bash
 #
 # Environment overrides:
-#   FORK_REPO=you/3x-ui      repository whose Releases hold the binaries
-#   FORK_VERSION=v1.0.0      release tag to install (default: latest)
-#   XUI_PANEL_PORT=5566      initial panel port
+#   FORK_REPO=you/mirage-ui   repository whose Releases hold the binaries
+#   FORK_VERSION=v1.0.0       release tag to install (default: latest)
+#   XUI_PANEL_PORT=5566       panel port
+#   XUI_USERNAME/XUI_PASSWORD first-login account (default: generated)
 #   XUI_MAIN_FOLDER=/usr/local/x-ui
+#
+# The account/password are consumed only on the very first start (empty
+# database); the temp env file is removed right after.
 set -euo pipefail
 
 FORK_REPO="${FORK_REPO:-tengems/mirage-ui}"
 FORK_VERSION="${FORK_VERSION:-latest}"
 PANEL_PORT="${XUI_PANEL_PORT:-5566}"
+SEEDED_USER="${XUI_USERNAME:-}"
+SEEDED_PASS="${XUI_PASSWORD:-}"
 XUI_FOLDER="${XUI_MAIN_FOLDER:-/usr/local/x-ui}"
 SERVICE=x-ui
+INIT_ENV="${XUI_FOLDER}/acc/initial.env"
 
 red='\033[0;31m'; green='\033[0;32m'; yellow='\033[0;33m'; plain='\033[0m'
 say()  { echo -e "${green}==> $*${plain}"; }
@@ -28,6 +35,14 @@ die()  { echo -e "${red}==> $*${plain}" >&2; exit 1; }
 [[ $EUID -eq 0 ]] || die "Run as root (or via sudo)."
 command -v systemctl >/dev/null || die "systemd is required."
 command -v curl >/dev/null || die "curl is required (apt install curl)."
+[[ "$PANEL_PORT" =~ ^[0-9]+$ ]] && (( PANEL_PORT >= 1 && PANEL_PORT <= 65535 )) \
+  || die "XUI_PANEL_PORT must be a number between 1 and 65535."
+if [[ -n "$SEEDED_PASS" && ${#SEEDED_PASS} -lt 8 ]]; then
+  die "XUI_PASSWORD must be at least 8 characters."
+fi
+if [[ ( -n "$SEEDED_USER" && -z "$SEEDED_PASS" ) || ( -z "$SEEDED_USER" && -n "$SEEDED_PASS" ) ]]; then
+  die "Set both XUI_USERNAME and XUI_PASSWORD, or neither."
+fi
 
 ARCH="$(uname -m)"
 case "$ARCH" in
@@ -67,7 +82,7 @@ touch "$XUI_FOLDER/x-ui-access.log"
 
 cat > /etc/systemd/system/${SERVICE}.service <<UNIT
 [Unit]
-Description=3x-ui Panel (fork)
+Description=Mirage-UI Panel
 After=network.target
 
 [Service]
@@ -76,6 +91,8 @@ WorkingDirectory=${XUI_FOLDER}
 Environment=XUI_DB_FOLDER=${XUI_FOLDER}
 Environment=XUI_BIN_FOLDER=${XUI_FOLDER}/bin
 Environment=XUI_LOG_FOLDER=${XUI_FOLDER}/logs
+Environment=XUI_PORT=${PANEL_PORT}
+EnvironmentFile=-${INIT_ENV}
 ExecStart=${XUI_FOLDER}/x-ui run
 Restart=on-failure
 RestartSec=3
@@ -87,17 +104,23 @@ UNIT
 
 say "Initialising settings (port ${PANEL_PORT}) ..."
 systemctl daemon-reload
-"${XUI_FOLDER}/x-ui" setting -port "$PANEL_PORT" >/dev/null 2>&1 || true
+if [[ -n "$SEEDED_USER" ]]; then
+  umask 077
+  printf 'XUI_USERNAME=%s\nXUI_PASSWORD=%s\n' "$SEEDED_USER" "$SEEDED_PASS" > "$INIT_ENV"
+fi
 systemctl enable --now "$SERVICE"
 
 sleep 5
+rm -f "$INIT_ENV"
 IP="$(curl -fsS --max-time 5 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}')"
 CREDS="$(journalctl -u "$SERVICE" --no-pager 2>/dev/null | grep -m1 'Username:' || true)"
 
 say "Done."
 echo
 echo -e "  Panel URL : http://${IP}:${PANEL_PORT}/"
-if [[ -n "$CREDS" ]]; then
+if [[ -n "$SEEDED_USER" ]]; then
+  echo -e "  Login     : ${SEEDED_USER} / (the XUI_PASSWORD you provided)"
+elif [[ -n "$CREDS" ]]; then
   echo -e "  ${CREDS#*generated. }"
 else
   warn "No first-run credentials in the log (service was running before)."

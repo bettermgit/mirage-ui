@@ -65,6 +65,19 @@ curl -fsSL https://raw.githubusercontent.com/<you>/mirage-ui/main/install-fork.s
 git clone https://github.com/<you>/mirage-ui && cd mirage-ui && bash install-fork.sh --from-source
 ```
 
+Initial credentials and ports can be supplied instead of generated:
+
+```bash
+# XUI_USERNAME + XUI_PASSWORD must be given together (first start only);
+# prefix with a space to keep the password out of your shell history
+ XUI_USERNAME=admin XUI_PASSWORD='Your-Strong-Pass' XUI_PANEL_PORT=8443 \
+  bash install-fork.sh
+```
+
+Both also work on the Docker image (`docker run -e XUI_USERNAME=... -e
+XUI_PASSWORD=...`) and apply only while the database has no users — they can
+never overwrite an existing account.
+
 The installer prints the panel URL and initial account. Security notes:
 
 1. **Change the password on first login**

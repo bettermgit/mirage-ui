@@ -1488,20 +1488,28 @@ func isIgnorableDuplicateColumnErr(gdb *gorm.DB, err error, mdl any) bool {
 	return false
 }
 
-// EnsureFirstUser creates the panel's first user with random credentials and returns
-// them, or returns "" when one exists; only the starting server calls it, so it can print them.
+// EnsureFirstUser creates the first user, returning the minted login for the server log;
+// XUI_USERNAME+XUI_PASSWORD seed it instead on an empty table, never an existing account.
 func EnsureFirstUser() (username, password string, err error) {
 	empty, err := isTableEmpty("users")
 	if err != nil || !empty {
 		return "", "", err
 	}
+	seedUser, seedPass := os.Getenv("XUI_USERNAME"), os.Getenv("XUI_PASSWORD")
+	seeded := seedUser != "" && seedPass != ""
 	username, password = random.Seq(10), random.Seq(16)
+	if seeded {
+		username, password = seedUser, seedPass
+	}
 	hashedPassword, err := crypto.HashPasswordAsBcrypt(password)
 	if err != nil {
 		return "", "", err
 	}
 	if err := db.Create(&model.User{Username: username, Password: hashedPassword}).Error; err != nil {
 		return "", "", err
+	}
+	if seeded {
+		return "", "", nil
 	}
 	return username, password, nil
 }

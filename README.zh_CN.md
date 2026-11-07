@@ -54,6 +54,19 @@ curl -fsSL https://raw.githubusercontent.com/<you>/mirage-ui/main/install-fork.s
 git clone https://github.com/<you>/mirage-ui && cd mirage-ui && bash install-fork.sh --from-source
 ```
 
+初始账号密码与端口也可以自行指定，不必使用随机生成的：
+
+```bash
+# XUI_USERNAME + XUI_PASSWORD 需成对提供（仅首次启动生效）；
+# 行首留一个空格可避免密码进入 shell 历史
+ XUI_USERNAME=admin XUI_PASSWORD='你的强密码' XUI_PANEL_PORT=8443 \
+  bash install-fork.sh
+```
+
+同样的变量也适用于 Docker 镜像（`docker run -e XUI_USERNAME=... -e
+XUI_PASSWORD=...`），且只在数据库尚无任何用户时生效——永远无法覆盖已存在的
+账号。
+
 安装完成后终端会打印面板地址与初始账号。安全提示：
 
 1. **首次登录请立即修改密码**
