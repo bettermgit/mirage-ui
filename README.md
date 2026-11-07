@@ -71,6 +71,18 @@ The installer prints the panel URL and initial account. Security notes:
 2. Open in both the system firewall and the cloud security group: panel port
    (default 5566), subscription port 2096, and every inbound you create
 
+## Docker
+
+```bash
+docker build -t mirage-ui .
+docker run -d --name mirage-ui --restart unless-stopped --network host \
+  -v mirage-xui:/etc/x-ui mirage-ui
+```
+
+`--network host` lets proxy inbounds use arbitrary ports without mapping each
+one; replace it with `-p 2053:2053 -p 2096:2096 …` if you prefer isolation.
+The panel database persists in the `mirage-xui` volume.
+
 ## HTTPS
 
 Panel and subscription server accept standard certificate settings

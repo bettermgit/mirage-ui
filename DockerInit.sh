@@ -34,7 +34,7 @@ case $PLATFORM in
     386) XRAY_ZIP="32" ;;
 esac
 # The panel looks binaries up by GOARCH; on arm Xray's is "arm32"
-# (internal/xray/process.go) and mtg's plain "arm", as install.sh renames them.
+# (internal/xray/process.go) and mtg's plain "arm" naming..
 case $PLATFORM in
     armv7 | armv6)
         XRAY_BIN="xray-linux-arm32"

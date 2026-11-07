@@ -60,6 +60,17 @@ git clone https://github.com/<you>/mirage-ui && cd mirage-ui && bash install-for
 2. 系统防火墙与云安全组需同时放行：面板端口（默认 5566）、订阅端口 2096、
    以及你创建的每个入站端口
 
+## Docker
+
+```bash
+docker build -t mirage-ui .
+docker run -d --name mirage-ui --restart unless-stopped --network host \
+  -v mirage-xui:/etc/x-ui mirage-ui
+```
+
+`--network host` 让代理入站无需逐个映射任意端口；需要隔离时可改用
+`-p 2053:2053 -p 2096:2096 …`。面板数据库持久化在 `mirage-xui` 卷中。
+
 ## HTTPS
 
 面板与订阅服务支持标准证书配置（设置 → SSL）。配合任一 ACME 工具
