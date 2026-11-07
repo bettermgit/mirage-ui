@@ -1,0 +1,98 @@
+package model
+
+type RenderOptions struct {
+	Template                string                   `json:"template"`
+	MixedPort               int                      `json:"mixed_port"`
+	AllowLAN                bool                     `json:"allow_lan"`
+	Mode                    string                   `json:"mode"`
+	LogLevel                string                   `json:"log_level"`
+	IPv6                    bool                     `json:"ipv6"`
+	DNSEnabled              bool                     `json:"dns_enabled"`
+	CustomDNS               bool                     `json:"custom_dns,omitempty"`
+	EnhancedMode            string                   `json:"enhanced_mode"`
+	Emoji                   bool                     `json:"emoji"`
+	ShowNodeType            bool                     `json:"show_node_type"`
+	IncludeInfoNode         bool                     `json:"include_info_node"`
+	ShowInfoNodes           bool                     `json:"show_info_nodes,omitempty"`
+	SkipTLSVerify           bool                     `json:"skip_tls_verify"`
+	UDP                     bool                     `json:"udp"`
+	NodeList                bool                     `json:"node_list"`
+	SortNodes               bool                     `json:"sort_nodes"`
+	FilterIllegal           bool                     `json:"filter_illegal"`
+	InsertURL               bool                     `json:"insert_url"`
+	GroupProxyMode          string                   `json:"group_proxy_mode,omitempty"`
+	GroupOptions            GroupOptions             `json:"group_options,omitempty"`
+	SourcePrefix            bool                     `json:"source_prefix"`
+	SourcePrefixFormat      string                   `json:"source_prefix_format,omitempty"`
+	SourcePrefixSeparator   string                   `json:"source_prefix_separator,omitempty"`
+	NameOptions             NameOptions              `json:"name_options,omitempty"`
+	DedupeScope             string                   `json:"dedupe_scope,omitempty"`
+	GeodataMode             bool                     `json:"geodata_mode"`
+	GeoAutoUpdate           bool                     `json:"geo_auto_update"`
+	GeodataLoader           string                   `json:"geodata_loader,omitempty"`
+	GeoUpdateInterval       int                      `json:"geo_update_interval,omitempty"`
+	GeoxURL                 *GeoxURLConfig           `json:"geox_url,omitempty"`
+	IncludeKeywords         string                   `json:"include_keywords,omitempty"`
+	ExcludeKeywords         string                   `json:"exclude_keywords,omitempty"`
+	OutputFilename          string                   `json:"output_filename,omitempty"`
+	TemplateRuleMode        string                   `json:"template_rule_mode"`
+	ExternalConfig          ExternalConfig           `json:"external_config"`
+	RuleMode                string                   `json:"rule_mode"`
+	EnabledRules            []string                 `json:"enabled_rules"`
+	CustomRules             []CustomRule             `json:"custom_rules"`
+	UnifiedDelay            bool                     `json:"unified_delay"`
+	TCPConcurrent           bool                     `json:"tcp_concurrent"`
+	FindProcessMode         string                   `json:"find_process_mode,omitempty"`
+	GlobalClientFingerprint string                   `json:"global_client_fingerprint,omitempty"`
+	DNS                     *DNSConfig               `json:"dns,omitempty"`
+	Profile                 *ProfileConfig           `json:"profile,omitempty"`
+	Sniffer                 *SnifferConfig           `json:"sniffer,omitempty"`
+	FinalPolicy             string                   `json:"final_policy,omitempty"`
+	AdditionalRules         []string                 `json:"additional_rules"`
+	RuleProviders           []RuleProviderConfig     `json:"rule_providers"`
+	CustomProxyGroups       []CustomProxyGroupConfig `json:"custom_proxy_groups"`
+	SubscriptionInfo        *SubscriptionInfoConfig  `json:"subscription_info,omitempty"`
+}
+
+func DefaultRenderOptions() RenderOptions {
+	defaults := DefaultRenderConfig()
+	return RenderOptions{
+		Template:                DefaultTemplate,
+		MixedPort:               DefaultMixedPort,
+		AllowLAN:                true,
+		Mode:                    DefaultMode,
+		LogLevel:                DefaultLogLevel,
+		DNSEnabled:              true,
+		EnhancedMode:            DefaultEnhancedMode,
+		Emoji:                   false,
+		ShowNodeType:            false,
+		IncludeInfoNode:         false,
+		ShowInfoNodes:           false,
+		UDP:                     true,
+		FilterIllegal:           true,
+		GroupProxyMode:          "compact",
+		GroupOptions:            DefaultGroupOptions(),
+		SourcePrefix:            true,
+		SourcePrefixFormat:      "{emoji} {name}",
+		SourcePrefixSeparator:   "｜",
+		NameOptions:             DefaultNameOptions(),
+		DedupeScope:             "global",
+		UnifiedDelay:            true,
+		TCPConcurrent:           false,
+		FindProcessMode:         "strict",
+		GlobalClientFingerprint: "chrome",
+		OutputFilename:          "mihomo.yaml",
+		TemplateRuleMode:        "rules",
+		DNS:                     defaults.DNS,
+		Profile:                 defaults.Profile,
+		Sniffer:                 defaults.Sniffer,
+		ExternalConfig: ExternalConfig{
+			TemplateKey:   "none",
+			TemplateLabel: "不选择，由接口提供方提供",
+		},
+		RuleMode:         "balanced",
+		EnabledRules:     []string{},
+		CustomRules:      []CustomRule{},
+		SubscriptionInfo: DefaultSubscriptionInfoConfig(),
+	}
+}

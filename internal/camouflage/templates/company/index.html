@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>云图科技 - 可观测性基础设施服务商</title>
+<meta name="description" content="云图科技提供日志、指标、链路三位一体的可观测性平台，服务 300+ 企业客户。">
+<meta property="og:title" content="云图科技 - 可观测性基础设施服务商">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+:root{--ink:#1d2733;--brand:#0b6bcb;--bg:#fff;--gray:#f4f7fa;--sub:#6b7a8d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);line-height:1.7}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:1140px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid #e6ebf1;position:sticky;top:0;background:#fff;z-index:9}
+.nav{display:flex;height:64px;align-items:center;gap:30px}
+.logo{font-size:20px;font-weight:800;color:var(--brand);display:flex;align-items:center;gap:8px}
+.nav a{font-size:15px;color:#3c4a59}
+.nav .log{margin-left:auto;background:var(--brand);color:#fff;padding:8px 20px;border-radius:6px;font-size:14px}
+.hero{background:linear-gradient(120deg,#0b2545 0%,#123c6e 60%,#0b6bcb 100%);color:#fff;padding:84px 0 92px}
+.hero h1{font-size:38px;line-height:1.35;max-width:640px}
+.hero p{margin:18px 0 30px;font-size:16.5px;color:#c8d8ea;max-width:560px}
+.btn{display:inline-block;background:#ff8c42;color:#fff;padding:12px 30px;border-radius:8px;font-size:15.5px;margin-right:14px}
+.btn.ghost{background:transparent;border:1px solid #ffffff66;color:#fff}
+.hero svg{position:absolute;right:6%;top:40px;opacity:.85}
+.stats{display:flex;gap:0;background:#fff;border:1px solid #e6ebf1;border-radius:14px;margin:-46px auto 0;max-width:900px;position:relative;box-shadow:0 10px 30px rgba(11,45,90,.08)}
+.stat{flex:1;text-align:center;padding:24px 10px;border-right:1px solid #eef2f6}
+.stat b{font-size:26px;color:var(--brand);display:block}
+.stat span{font-size:13px;color:var(--sub)}
+section{padding:64px 0}
+section h2{font-size:26px;text-align:center;margin-bottom:8px}
+.sdesc{text-align:center;color:var(--sub);font-size:14.5px;margin-bottom:38px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.prod{background:var(--gray);border-radius:12px;padding:26px 24px;transition:.2s}
+.prod:hover{background:#fff;box-shadow:0 8px 26px rgba(11,45,90,.1);transform:translateY(-3px)}
+.prod .ic{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.prod h3{font-size:17px;margin-bottom:8px}
+.prod p{font-size:13.5px;color:var(--sub)}
+.news li{list-style:none;display:flex;justify-content:space-between;padding:14px 4px;border-bottom:1px dashed #e3e9ef;font-size:14.5px}
+.news time{color:#9fb0c1;font-size:13px;white-space:nowrap;margin-left:20px}
+.logos{display:flex;flex-wrap:wrap;gap:14px 34px;justify-content:center;color:#a8b6c4;font-size:15px;font-weight:600}
+.cta{background:linear-gradient(100deg,#0b6bcb,#0b2545);border-radius:16px;color:#fff;text-align:center;padding:52px 20px}
+.cta h2{color:#fff}
+footer{background:#101b28;color:#8ba0b5;padding:44px 0 30px;font-size:13px}
+.fgrid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:30px;margin-bottom:30px}
+footer h4{color:#fff;font-size:14.5px;margin-bottom:12px}
+footer li{list-style:none;margin-bottom:8px}
+.fbottom{border-top:1px solid #223244;padding-top:20px;text-align:center;line-height:2}
+@media(max-width:860px){.grid,.fgrid{grid-template-columns:1fr}.stats{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+<span class="logo"><svg width="26" height="26" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#0b6bcb"/><path d="M14 40c4-14 12-20 24-18-2 6-8 10-14 10 2 6 8 8 14 6-4 8-18 10-24 2z" fill="#fff"/></svg>云图科技</span>
+<a href="/">首页</a><a href="/products.html">产品</a><a href="/news.html">客户案例</a><a href="/news.html">新闻动态</a><a href="/contact.html">联系我们</a>
+<a class="log" href="/contact.html">免费试用</a>
+</div></header>
+
+<div class="hero"><div class="wrap" style="position:relative">
+<h1>让每一次故障，<br>都有迹可循</h1>
+<p>云图可观测性平台 · 日志 / 指标 / 链路三位一体<br>日均处理 2.4 万亿条遥测数据，P99 查询延迟 &lt; 800ms</p>
+<a class="btn" href="/contact.html">申请演示</a>
+<a class="btn ghost" href="/products.html">了解产品</a>
+</div></div>
+
+<div class="wrap stats">
+<div class="stat"><b>300+</b><span>企业客户</span></div>
+<div class="stat"><b>2.4 万亿</b><span>日均遥测数据条数</span></div>
+<div class="stat"><b>99.99%</b><span>服务可用性</span></div>
+<div class="stat"><b>7×24</b><span>专家级技术支持</span></div>
+</div>
+
+<section><div class="wrap">
+<h2>产品矩阵</h2>
+<p class="sdesc">从采集到告警，一个平台覆盖全栈可观测性</p>
+<div class="grid">
+<div class="prod"><div class="ic" style="background:#e3f0fd"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0b6bcb" stroke-width="2"><path d="M4 19V9M10 19V5M16 19v-8M22 19H2"/></svg></div>
+<h3>云图 · 指标 CloudMetrics</h3><p>兼容 Prometheus 协议的高基数时序库，单机千万级活跃时间线，存储成本降低 70%。</p></div>
+<div class="prod"><div class="ic" style="background:#e8f7ee"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a06a" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h7"/></svg></div>
+<h3>云图 · 日志 CloudLogs</h3><p>全文检索秒级返回，PB 级冷热分层，SQL 与 SPL 双查询引擎，日志不再是黑盒。</p></div>
+<div class="prod"><div class="ic" style="background:#f3ecfd"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7f5af0" stroke-width="2"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M6.5 7.5 10.5 16M17.5 7.5 13.5 16"/></svg></div>
+<h3>云图 · 链路 CloudTraces</h3><p>eBPF 无侵入采集 + OpenTelemetry 原生兼容，微服务调用拓扑一键下钻。</p></div>
+</div>
+</div></section>
+
+<section style="background:var(--gray)"><div class="wrap">
+<h2>他们都在用云图</h2>
+<p class="sdesc">覆盖金融、电商、游戏、出行等 20+ 行业</p>
+<ul class="logos" style="list-style:none;padding:0;margin-bottom:8px">
+<li>极光银行</li><li>橙心出行</li><li>万象电商</li><li>星海游戏</li><li>云栖保险</li><li>蓝鲸物流</li><li>光合传媒</li><li>御风科技</li>
+</ul>
+</div></section>
+
+<section><div class="wrap">
+<h2>最新动态</h2>
+<p class="sdesc">产品发布与行业洞察</p>
+<ul class="news">
+<li><a href="/news.html">云图可观测性平台 v5.2 发布：引入异常检测大模型辅助根因定位</a><time>2026-02-18</time></li>
+<li><a href="/news.html">《2025 可观测性实践白皮书》正式开放下载（附 30 个真实案例）</a><time>2026-01-09</time></li>
+<li><a href="/news.html">云图通过信通院"可观测性平台能力评估"最高等级认证</a><time>2025-11-27</time></li>
+<li><a href="/news.html">客户故事 · 星海游戏：把全链路排障时间从 40 分钟压缩到 90 秒</a><time>2025-10-15</time></li>
+</ul>
+<div style="text-align:center;margin-top:30px"><a class="btn" style="background:var(--brand)" href="/contact.html">预约产品演示</a></div>
+</div></section>
+
+<section><div class="wrap"><div class="cta">
+<h2 style="margin-bottom:10px">现在开始，30 天免费体验完整能力</h2>
+<p style="color:#c8d8ea;margin-bottom:26px">无需信用卡 · 15 分钟完成接入 · 专属架构师答疑</p>
+<a class="btn" href="/contact.html">立即开始</a>
+</div></div></section>
+
+<footer><div class="wrap">
+<div class="fgrid">
+<div><span class="logo" style="color:#fff">云图科技</span>
+<p style="margin-top:12px;max-width:280px">可观测性基础设施服务商<br>让每一次故障，都有迹可循。</p></div>
+<div><h4>产品</h4><ul><li><a href="/products.html">CloudMetrics</a></li><li><a href="/products.html">CloudLogs</a></li><li><a href="/products.html">CloudTraces</a></li><li><a href="/products.html">统一告警中心</a></li></ul></div>
+<div><h4>公司</h4><ul><li><a href="/news.html">关于我们</a></li><li><a href="/news.html">新闻动态</a></li><li><a href="/contact.html">加入我们</a></li></ul></div>
+<div><h4>联系</h4><ul><li>400-860-1188</li><li>hello@yuntu-tech.example.cn</li><li>上海市浦东新区张江高科</li></ul></div>
+</div>
+<div class="fbottom">© 2018-2026 云图科技有限公司 版权所有 · <a href="#" style="color:#8ba0b5">沪ICP备18042763号-2</a> · <a href="#" style="color:#8ba0b5">沪公网安备 31011502004471 号</a></div>
+</div></footer>
+</body>
+</html>

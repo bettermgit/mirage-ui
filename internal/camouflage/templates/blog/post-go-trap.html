@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>记一次 Go map 遍历顺序引发的线上故障 - 随笔小站</title>
+<meta name="description" content="测试环境一切正常，生产偶发对账不一致。排查到最后，凶手是最熟悉的陌生人：map 遍历顺序。">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="随笔小站" href="/feed.xml">
+<style>
+:root{--ink:#2c3e50;--sub:#7f8c8d;--bg:#f7f8fa;--card:#fff;--line:#e8eaed;--brand:#3863d6}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;color:var(--ink);background:var(--bg);line-height:1.8}
+a{color:var(--brand);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px}
+header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:9}
+.nav{display:flex;align-items:center;height:58px;gap:22px}
+.logo{font-size:19px;font-weight:700;color:var(--ink)}.logo b{color:var(--brand)}
+.nav a{color:#4a5a6a;font-size:14.5px}
+.main{display:grid;grid-template-columns:1fr 280px;gap:22px;padding:22px 0}
+article{background:#fff;border:1px solid var(--line);border-radius:10px;padding:28px 34px}
+article h1{font-size:24px;line-height:1.4;margin-bottom:10px}
+.meta{font-size:12.5px;color:var(--sub);margin-bottom:22px;display:flex;gap:14px}
+article h2{font-size:18px;margin:26px 0 10px;padding-left:10px;border-left:4px solid var(--brand)}
+article p{font-size:15px;color:#37455a;margin-bottom:14px}
+pre{background:#1e2530;color:#d8dee9;padding:14px 16px;border-radius:8px;font-size:13px;overflow-x:auto;margin:14px 0;line-height:1.6}
+code{font-family:"Sarasa Mono SC",Consolas,monospace}
+p code,li code{background:#eef1f5;color:#c0392b;padding:1px 6px;border-radius:4px;font-size:13px}
+blockquote{border-left:4px solid #f0b429;background:#fffaf0;padding:10px 16px;color:#7a6a45;font-size:14px;margin:14px 0;border-radius:0 8px 8px 0}
+ul{padding-left:22px;margin-bottom:14px}li{font-size:15px;color:#37455a;margin-bottom:6px}
+.side .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
+.side h3{font-size:15px;margin-bottom:12px;padding-left:9px;border-left:3px solid var(--brand)}
+.side li{list-style:none;font-size:13.5px;margin-bottom:9px;color:#4a5a6a}
+.tags{margin:20px 0}
+.tag{display:inline-block;background:#eef3fe;color:var(--brand);border-radius:4px;padding:2px 10px;font-size:12.5px;margin-right:8px}
+.prevnext{display:flex;justify-content:space-between;font-size:14px;margin-top:26px;padding-top:16px;border-top:1px dashed var(--line)}
+.comments{margin-top:24px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:20px 26px}
+.comments h3{font-size:16px;margin-bottom:14px}
+.cm{border-bottom:1px solid #f0f2f5;padding:12px 0;font-size:14px;color:#4a5a6a}
+.cm b{color:#2c3e50}.cm small{color:#a5aeb8;margin-left:8px}
+footer{border-top:1px solid var(--line);background:#fff;padding:22px 0;text-align:center;font-size:12.5px;color:var(--sub)}
+@media(max-width:780px){.main{grid-template-columns:1fr}article{padding:20px 18px}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+<a class="logo" href="/">随笔<b>小站</b></a>
+<a href="/">首页</a><a href="/archive.html">归档</a><a href="/about.html">关于</a><a href="/feed.xml">RSS</a>
+</div></header>
+<div class="wrap main">
+<article>
+<h1>记一次 Go map 遍历顺序引发的线上故障</h1>
+<div class="meta"><span>2026-03-14</span><span>分类：后端</span><span>字数：约 2300 字</span><span>阅读 4,217</span></div>
+
+<p>上周三晚上十点，对账系统开始间歇性告警：同一笔订单，两次生成的对账单 diff 不为空。金额分毫不少，只是<strong>行的顺序变了</strong>。测试环境跑了半年一次没出过，生产上线第三天就炸。</p>
+
+<h2>排查过程</h2>
+<p>第一反应是并发改了数据。把两次请求的入参和中间状态 dump 出来对比，输入完全一致，输出内容一致、顺序不同——那就没有并发什么事了，纯纯的确定性代码给出了非确定性输出。</p>
+<p>顺着 diff 生成的调用链往上找，三行之后就是它：</p>
+<pre><code>rows := make([]string, 0, len(summary))
+for id, amt := range accountSummary {   // ← 元凶
+    rows = append(rows, fmt.Sprintf("%s|%d", id, amt))
+}
+sort.Strings(rows)                      // 排序了，但排的是拼接后的字符串</code></pre>
+<p>等等，排序了还会乱？会。因为 <code>fmt.Sprintf("%s|%d", ...)</code> 里的 id 是账户号，而<em>拼接前</em>的 map 遍历顺序决定了……什么？不影响结果？不，真正的问题在下一层：</p>
+
+<blockquote>对账单尾部的"操作轨迹"字段是直接遍历操作日志 map 拼接的，没排序。之前没炸，只是因为测试数据少，恰好每次哈希桶布局一样。</blockquote>
+
+<h2>为什么测试环境不复现</h2>
+<ul>
+<li>Go 的 map 遍历是随机的，但随机种子来自运行时；<strong>小 map 在基准测试式的固定输入下"看起来稳定"</strong>，给了所有人错觉；</li>
+<li>生产的 key 数量上去了（账户数 2w+），哈希冲突的桶链变长，随机性终于暴露；</li>
+<li>CI 里没有对账单顺序断言，只有内容断言——这是流程要补的课。</li>
+</ul>
+
+<h2>修复与守则</h2>
+<pre><code>ids := make([]string, 0, len(accountSummary))
+for id := range accountSummary {
+    ids = append(ids, id)
+}
+sort.Strings(ids)            // 先排 key
+for _, id := range ids {
+    rows = append(rows, fmt.Sprintf("%s|%d", id, accountSummary[id]))
+}</code></pre>
+<p>组内定了两条守则：任何要落盘、要对外、要参与 diff/hash 的 map 输出，必须先取 key 排序；CR checklist 加了一条"这个循环的顺序重要吗？"。</p>
+
+<p>最后统计了一下，这个坑我们组近三年踩了四次，分别在 Java（HashMap）、Python（dict 早期版本）、PHP 和这次的 Go。语言在变，坑没变：<strong>把"遍历顺序"当成"业务顺序"，是所有哈希容器的第一定律违例。</strong></p>
+
+<div class="tags"><a class="tag" href="#">Go</a><a class="tag" href="#">踩坑</a><a class="tag" href="#">代码评审</a></div>
+<div class="prevnext"><a href="/post-tcpdump.html">← 用 tcpdump 排查偶发丢包的完整思路</a><a href="/archive.html">归档 →</a></div>
+</article>
+<aside class="side">
+  <div class="card"><h3>相关阅读</h3><ul>
+    <li><a href="/post-tcpdump.html">用 tcpdump 排查偶发丢包的完整思路</a></li>
+    <li><a href="/post-nginx-log.html">从 nginx access log 里揪出扫端口的人</a></li>
+    <li><a href="/post-nas.html">把退役的笔记本改成家庭 NAS 的第 300 天</a></li>
+  </ul></div>
+  <div class="card"><h3>文章目录</h3><ul>
+    <li><a href="#" style="color:#8a97a5">排查过程</a></li>
+    <li><a href="#" style="color:#8a97a5">为什么测试环境不复现</a></li>
+    <li><a href="#" style="color:#8a97a5">修复与守则</a></li>
+  </ul></div>
+</aside>
+</div>
+<div class="wrap"><div class="comments">
+<h3>评论（3）</h3>
+<div class="cm"><b>@青柠不加冰</b><small>2026-03-15 09:22</small><p>第四条同款坑报道，我们是 Python 的 set，肉眼查了两天。</p></div>
+<div class="cm"><b>@random walker</b><small>2026-03-15 21:40</small><p>"把遍历顺序当业务顺序"这句建议裱起来。</p></div>
+<div class="cm"><b>@楼下扫地僧</b><small>2026-03-18 11:05</small><p>建议补一段 fuzz 的思路，顺序类问题 fuzz 一轰一个准。</p></div>
+</div></div>
+<footer><div class="wrap">
+<p>© 2022-2026 随笔小站 · <a href="#">沪ICP备2023019827号-1</a> · Powered by Hugo &amp; PaperMod</p>
+</div></footer>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>随笔小站 - 记录技术与生活</title>
+<meta name="description" content="一个记录后端开发、网络排查和日常思考的个人博客，更新随缘，文字保真。">
+<meta name="keywords" content="Go,网络,Linux,随笔,技术博客">
+<meta property="og:title" content="随笔小站 - 记录技术与生活">
+<meta property="og:description" content="记录后端开发、网络排查和日常思考。">
+<meta property="og:type" content="website">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="随笔小站" href="/feed.xml">
+<style>
+:root{--ink:#2c3e50;--sub:#7f8c8d;--bg:#f7f8fa;--card:#fff;--line:#e8eaed;--brand:#3863d6}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;color:var(--ink);background:var(--bg);line-height:1.7}
+a{color:var(--brand);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px}
+header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:9}
+.nav{display:flex;align-items:center;height:58px;gap:22px}
+.logo{font-size:19px;font-weight:700;color:var(--ink)}
+.logo b{color:var(--brand)}
+.nav a{color:#4a5a6a;font-size:14.5px}
+.nav a.on{color:var(--brand);font-weight:600}
+.main{display:grid;grid-template-columns:1fr 280px;gap:22px;padding:22px 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:16px;overflow:hidden;transition:box-shadow .2s}
+.card:hover{box-shadow:0 4px 14px rgba(40,70,140,.08)}
+.cover{display:block;width:100%;height:150px}
+.card .bd{padding:15px 18px 17px}
+.card h2{font-size:17.5px;margin-bottom:7px}
+.card p{font-size:14px;color:#5a6a7a;margin-bottom:10px}
+.meta{font-size:12.5px;color:var(--sub);display:flex;gap:14px;flex-wrap:wrap}
+.meta a{text-decoration:none}
+.tag{background:#eef3fe;color:var(--brand);border-radius:4px;padding:1px 8px;font-size:12px;margin-right:4px}
+.side .card{margin-bottom:16px;padding:16px 18px}
+.side h3{font-size:15px;margin-bottom:12px;padding-left:9px;border-left:3px solid var(--brand)}
+.side li{list-style:none;font-size:13.5px;margin-bottom:9px;color:#4a5a6a}
+.side li span{color:#b0b8c1;font-size:12px;float:right}
+.cloud a{display:inline-block;background:#f0f2f5;border-radius:4px;padding:2px 10px;margin:0 6px 8px 0;font-size:12.5px;color:#556}
+.pager{text-align:center;padding:8px 0 20px;font-size:14px}
+.pager a,.pager b{display:inline-block;min-width:32px;padding:5px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;margin:0 3px}
+.pager b{background:var(--brand);color:#fff;border-color:var(--brand)}
+footer{border-top:1px solid var(--line);background:#fff;padding:22px 0;text-align:center;font-size:12.5px;color:var(--sub)}
+footer a{color:#8a97a5}
+@media(max-width:780px){.main{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+<a class="logo" href="/">随笔<b>小站</b></a>
+<a class="on" href="/">首页</a><a href="/archive.html">归档</a><a href="/about.html">关于</a><a href="/feed.xml">RSS</a>
+</div></header>
+<div class="wrap main">
+<div>
+  <article class="card">
+  <a href="/post-go-trap.html"><svg class="cover" viewBox="0 0 600 150" preserveAspectRatio="none"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2b5876"/><stop offset="1" stop-color="#4e4376"/></linearGradient></defs><rect width="600" height="150" fill="url(#g1)"/><circle cx="510" cy="34" r="60" fill="#ffffff12"/><circle cx="560" cy="120" r="90" fill="#ffffff0c"/><text x="36" y="86" font-size="30" fill="#ffffffd8" font-family="monospace">map iteration order</text></svg></a>
+  <div class="bd">
+    <h2><a href="/post-go-trap.html">记一次 Go map 遍历顺序引发的线上故障</a></h2>
+    <p>测试环境跑了半年相安无事，一上生产就偶发对账不一致。排查到最后发现是拿 map 遍历顺序当了输出顺序——这个坑每年都有同事踩，写下来给大家提个醒……</p>
+    <div class="meta"><span>2026-03-14</span><span>约 8 分钟</span><span><a class="tag" href="#">Go</a><a class="tag" href="#">踩坑</a></span></div>
+  </div></article>
+
+  <article class="card">
+  <a href="/post-tcpdump.html"><svg class="cover" viewBox="0 0 600 150" preserveAspectRatio="none"><defs><linearGradient id="g2" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#134e5e"/><stop offset="1" stop-color="#71b280"/></linearGradient></defs><rect width="600" height="150" fill="url(#g2)"/><path d="M0 110 Q75 60 150 100 T300 90 T450 105 T600 85" stroke="#ffffff30" fill="none" stroke-width="2.5"/><text x="36" y="60" font-size="30" fill="#ffffffd8" font-family="monospace">tcpdump -i any</text></svg></a>
+  <div class="bd">
+    <h2><a href="/post-tcpdump.html">用 tcpdump 排查偶发丢包的完整思路</a></h2>
+    <p>客户端报 connect timeout，服务端日志里什么都找不到。这种"两边都说不是自己的错"的问题，抓包是唯一诚实的答案。从 BPF 过滤表达式到重传比统计，整理一套自己的排查套路……</p>
+    <div class="meta"><span>2026-01-27</span><span>约 12 分钟</span><span><a class="tag" href="#">网络</a><a class="tag" href="#">Linux</a></span></div>
+  </div></article>
+
+  <article class="card">
+  <div class="bd">
+    <h2><a href="/post-nas.html">把退役的笔记本改成家庭 NAS 的第 300 天</a></h2>
+    <p>电费、噪音、掉盘、断电、备份策略，以及值不值。一台 i5-8250U + 16G 的旧笔记本，跑着 Debian、immich、jellyfin 和两个 4T 的机械盘（通过硬盘盒），居然稳稳跑了三百天……</p>
+    <div class="meta"><span>2025-11-02</span><span>约 9 分钟</span><span><a class="tag" href="#">折腾</a><a class="tag" href="#">自托管</a></span></div>
+  </div></article>
+
+  <article class="card">
+  <div class="bd">
+    <h2><a href="/post-read.html">2025 年度书单：七本读完的和一个也没懂的</a></h2>
+    <p>今年读得慢，但密度不错。《芯片战争》《明史简述》《The Inner Flame》……技术书只读完一本，反而是一本讲注意力管理的书反复读了三遍。</p>
+    <div class="meta"><span>2025-12-28</span><span>约 6 分钟</span><span><a class="tag" href="#">读书</a></span></div>
+  </div></article>
+
+  <article class="card">
+  <div class="bd">
+    <h2><a href="/post-nginx-log.html">从 nginx access log 里揪出扫端口的人</a></h2>
+    <p>公网机器每天被扫是常态，但上周的日志里混着一些不太一样的请求：它们有 cookie、有 referer、间隔精确到分钟级。把日志喂进 awk 之后，故事就出来了。</p>
+    <div class="meta"><span>2025-09-16</span><span>约 7 分钟</span><span><a class="tag" href="#">安全</a><a class="tag" href="#">Linux</a></span></div>
+  </div></article>
+
+  <div class="pager"><b>1</b><a href="/archive.html">2</a><a href="/archive.html">3</a><a href="/archive.html">→</a></div>
+</div>
+<aside class="side">
+  <div class="card"><h3>关于我</h3><p style="font-size:13.5px;color:#5a6a7a">后端开发，写过 Go 也写过 Java，最近在搬砖之余学 Rust。喜欢把踩过的坑写下来，免得下次再踩。</p></div>
+  <div class="card"><h3>热门文章</h3><ul>
+    <li><a href="/post-go-trap.html">记一次 Go map 遍历顺序引发的线上故障</a><span>4.2k</span></li>
+    <li><a href="/post-tcpdump.html">用 tcpdump 排查偶发丢包的完整思路</a><span>3.8k</span></li>
+    <li><a href="/post-nginx-log.html">从 nginx access log 里揪出扫端口的人</a><span>2.6k</span></li>
+    <li><a href="/post-nas.html">退役笔记本改 NAS 第 300 天</a><span>2.1k</span></li>
+  </ul></div>
+  <div class="card cloud"><h3>标签云</h3>
+    <a href="#">Go</a><a href="#">网络</a><a href="#">Linux</a><a href="#">踩坑</a><a href="#">折腾</a><a href="#">自托管</a><a href="#">读书</a><a href="#">安全</a><a href="#">Docker</a><a href="#">数据库</a>
+  </div>
+  <div class="card"><h3>友情链接</h3><ul>
+    <li><a href="#">老王的茶铺</a></li><li><a href="#">Mars 的后端周记</a></li><li><a href="#">云原生观测站</a></li>
+  </ul></div>
+</aside>
+</div>
+<footer><div class="wrap">
+<p>© 2022-2026 随笔小站 · 保持联系：<a href="mailto:hi@example-blog.dev">hi@example-blog.dev</a></p>
+<p style="margin-top:6px"><a href="#">沪ICP备2023019827号-1</a> · <a href="#">沪公网安备 31011502009827 号</a> · Powered by Hugo &amp; PaperMod</p>
+</div></footer>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>产品与价格 - 云图科技</title>
+<meta name="description" content="云图可观测性产品矩阵：指标、日志、链路与统一告警。">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+:root{--ink:#1d2733;--brand:#0b6bcb;--gray:#f4f7fa;--sub:#6b7a8d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);line-height:1.7}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+header{border-bottom:1px solid #e6ebf1;position:sticky;top:0;background:#fff;z-index:9}
+.nav{display:flex;height:64px;align-items:center;gap:30px}
+.logo{font-size:20px;font-weight:800;color:var(--brand)}
+.nav a{font-size:15px;color:#3c4a59}
+.nav .log{margin-left:auto;background:var(--brand);color:#fff;padding:8px 20px;border-radius:6px;font-size:14px}
+.pt{background:linear-gradient(120deg,#0b2545,#0b6bcb);color:#fff;text-align:center;padding:56px 0}
+.pt h1{font-size:30px}.pt p{color:#c8d8ea;margin-top:10px;font-size:15px}
+.pcard{display:grid;grid-template-columns:1fr 320px;gap:26px;background:#fff;border:1px solid #e6ebf1;border-radius:14px;padding:30px 32px;margin:26px 0}
+.pcard h2{font-size:21px;margin-bottom:6px}
+.pcard .tag{font-size:12px;background:#e3f0fd;color:var(--brand);border-radius:4px;padding:2px 10px;margin-left:10px;vertical-align:middle}
+.pcard p{font-size:14px;color:var(--sub);margin-bottom:14px}
+.pcard ul{padding-left:20px}
+.pcard li{font-size:14px;color:#3c4a59;margin-bottom:8px}
+.price{border-left:1px dashed #e3e9ef;padding-left:26px;display:flex;flex-direction:column;justify-content:center}
+.price .n{font-size:32px;font-weight:800;color:var(--brand)}
+.price .n small{font-size:13px;color:var(--sub);font-weight:400}
+.price ul{margin:14px 0;padding-left:18px}
+.btn{display:inline-block;background:var(--brand);color:#fff;padding:10px 26px;border-radius:8px;font-size:14.5px;text-align:center}
+section{padding:50px 0}
+h2.c{text-align:center;font-size:24px;margin-bottom:26px}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:#fff}
+th,td{border:1px solid #e6ebf1;padding:10px 14px;text-align:left}
+th{background:var(--gray)}
+footer{background:#101b28;color:#8ba0b5;padding:26px 0;text-align:center;font-size:13px;margin-top:40px}
+@media(max-width:820px){.pcard{grid-template-columns:1fr}.price{border-left:none;padding-left:0}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+<span class="logo">云图科技</span>
+<a href="/">首页</a><a href="/products.html">产品</a><a href="/news.html">客户案例</a><a href="/news.html">新闻动态</a><a href="/contact.html">联系我们</a>
+<a class="log" href="/contact.html">免费试用</a>
+</div></header>
+
+<div class="pt"><h1>产品与价格</h1><p>按需选择，随时升级 · 全系产品支持 SaaS 与私有化部署</p></div>
+
+<div class="wrap">
+<div class="pcard">
+<div>
+<h2>CloudMetrics 指标平台<span class="tag">热门</span></h2>
+<p>兼容 Prometheus / VictoriaMetrics 协议的高基数时序数据库与可视化套件。</p>
+<ul>
+<li>单机 1000 万活跃时间线，查询 P99 &lt; 300ms</li>
+<li>降采样 + 对象存储分层，成本较自建降低 70%</li>
+<li>内置 200+ 中间件 Dashboard 模板</li>
+<li>智能基线告警，误报率下降 60%</li>
+</ul>
+</div>
+<div class="price">
+<div><span class="n">¥0.8<small> / 百万数据点</small></span></div>
+<ul><li>按量计费，无起步费</li><li>赠送 50GB 热存</li></ul>
+<a class="btn" href="/contact.html">开始试用</a>
+</div>
+</div>
+
+<div class="pcard">
+<div>
+<h2>CloudLogs 日志平台<span class="tag">新品</span></h2>
+<p>PB 级日志的秒级全文检索，SQL / SPL 双引擎，冷热自动分层。</p>
+<ul>
+<li>10 秒内检索三个月内任意日志</li>
+<li>日志脱敏模板库，通过等保三级</li>
+<li>与 CloudTraces 双向跳转，排障闭环</li>
+</ul>
+</div>
+<div class="price">
+<div><span class="n">¥12<small> / 月 / GB 索引量</small></span></div>
+<ul><li>原文存储 0.35 折</li><li>支持私有化</li></ul>
+<a class="btn" href="/contact.html">开始试用</a>
+</div>
+</div>
+
+<div class="pcard">
+<div>
+<h2>CloudTraces 链路平台</h2>
+<p>eBPF 无侵入 + OpenTelemetry 原生，微服务拓扑与下钻分析。</p>
+<ul>
+<li>业务零改造采集，Agent 损耗 &lt; 2%</li>
+<li>调用链 / 日志 / 指标三态互跳</li>
+<li>异常事务自动采样留档</li>
+</ul>
+</div>
+<div class="price">
+<div><span class="n">¥680<small> / 万 Span</small></span></div>
+<ul><li>采样策略可配</li><li>支持混合云</li></ul>
+<a class="btn" href="/contact.html">开始试用</a>
+</div>
+</div>
+
+<section>
+<h2 class="c">版本对比</h2>
+<table>
+<tr><th>能力</th><th>社区版</th><th>专业版</th><th>企业版</th></tr>
+<tr><td>数据保留</td><td>7 天</td><td>90 天</td><td>自定义</td></tr>
+<tr><td>团队协作</td><td>3 人</td><td>不限</td><td>不限 + SSO</td></tr>
+<tr><td>告警通道</td><td>邮件 / Webhook</td><td>+ 短信 / 电话 / 企微 / 钉钉</td><td>+ 私有 IM 定制</td></tr>
+<tr><td>SLA</td><td>—</td><td>99.9%</td><td>99.99% 专属保障</td></tr>
+<tr><td>技术支持</td><td>社区</td><td>5×8</td><td>7×24 专属群</td></tr>
+</table>
+</section>
+</div>
+
+<footer>© 2018-2026 云图科技有限公司 · 沪ICP备18042763号-2</footer>
+</body>
+</html>

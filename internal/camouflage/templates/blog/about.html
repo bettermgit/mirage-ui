@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>关于 - 随笔小站</title>
+<meta name="description" content="关于随笔小站和它的作者。">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+:root{--ink:#2c3e50;--sub:#7f8c8d;--bg:#f7f8fa;--line:#e8eaed;--brand:#3863d6}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--ink);background:var(--bg);line-height:1.9}
+a{color:var(--brand);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+header{background:#fff;border-bottom:1px solid var(--line)}
+.nav{display:flex;align-items:center;height:58px;gap:22px}
+.logo{font-size:19px;font-weight:700;color:var(--ink)}.logo b{color:var(--brand)}
+.nav a{color:#4a5a6a;font-size:14.5px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:34px 38px;margin:28px 0}
+.avatar{display:block;width:76px;height:76px;border-radius:50%;margin-bottom:18px}
+h1{font-size:22px;margin-bottom:14px}
+p{font-size:15px;color:#37455a;margin-bottom:13px}
+hr{border:none;border-top:1px dashed var(--line);margin:22px 0}
+ul{padding-left:22px}li{font-size:14.5px;color:#4a5a6a;margin-bottom:7px}
+footer{border-top:1px solid var(--line);background:#fff;padding:22px 0;text-align:center;font-size:12.5px;color:var(--sub);margin-top:20px}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+<a class="logo" href="/">随笔<b>小站</b></a>
+<a href="/">首页</a><a href="/archive.html">归档</a><a href="/about.html">关于</a><a href="/feed.xml">RSS</a>
+</div></header>
+<div class="wrap"><div class="card">
+<svg class="avatar" viewBox="0 0 76 76"><defs><linearGradient id="av" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3863d6"/><stop offset="1" stop-color="#7f5af0"/></linearGradient></defs><circle cx="38" cy="38" r="38" fill="url(#av)"/><circle cx="38" cy="30" r="12" fill="#ffffffcc"/><path d="M16 62c4-14 40-14 44 0z" fill="#ffffffcc"/></svg>
+<h1>关于这个站点</h1>
+<p>你好，我是站主，ID「拾叁」。白天写 Java 和 Go，晚上偶尔写点文字。这个博客从 2022 年开到现在，换过三次主题，不变的是记录的习惯。</p>
+<p>这里的内容以<strong>后端开发和网络排障</strong>为主，混进一些读书和折腾记录。文章默认不再修改，有勘误会写在评论区置顶。</p>
+<hr>
+<h1 style="font-size:18px">建站信息</h1>
+<ul>
+<li>站点：Hugo + PaperMod，部署在自架的小机器上</li>
+<li>图片：能省的都省了，大部分文章干脆不放图</li>
+<li>评论：已关闭提交，历史评论保留</li>
+<li>更新频率：随缘，年均十篇左右</li>
+</ul>
+<hr>
+<h1 style="font-size:18px">联系</h1>
+<p>邮件：<a href="mailto:hi@example-blog.dev">hi@example-blog.dev</a>（会认真回，可能慢）</p>
+<p>RSS：<a href="/feed.xml">/feed.xml</a> · 订阅即是对我最大的鼓励。</p>
+</div></div>
+<footer><div class="wrap"><p>© 2022-2026 随笔小站 · <a href="#">沪ICP备2023019827号-1</a></p></div></footer>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>用 tcpdump 排查偶发丢包的完整思路 - 随笔小站</title>
+<meta name="description" content="客户端报 connect timeout，服务端日志一无所获。抓包，是唯一诚实的答案。">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="alternate" type="application/rss+xml" title="随笔小站" href="/feed.xml">
+<style>
+:root{--ink:#2c3e50;--sub:#7f8c8d;--bg:#f7f8fa;--card:#fff;--line:#e8eaed;--brand:#3863d6}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;color:var(--ink);background:var(--bg);line-height:1.8}
+a{color:var(--brand);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px}
+header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:9}
+.nav{display:flex;align-items:center;height:58px;gap:22px}
+.logo{font-size:19px;font-weight:700;color:var(--ink)}.logo b{color:var(--brand)}
+.nav a{color:#4a5a6a;font-size:14.5px}
+.main{display:grid;grid-template-columns:1fr 280px;gap:22px;padding:22px 0}
+article{background:#fff;border:1px solid var(--line);border-radius:10px;padding:28px 34px}
+article h1{font-size:24px;line-height:1.4;margin-bottom:10px}
+.meta{font-size:12.5px;color:var(--sub);margin-bottom:22px;display:flex;gap:14px}
+article h2{font-size:18px;margin:26px 0 10px;padding-left:10px;border-left:4px solid var(--brand)}
+article p{font-size:15px;color:#37455a;margin-bottom:14px}
+pre{background:#1e2530;color:#d8dee9;padding:14px 16px;border-radius:8px;font-size:13px;overflow-x:auto;margin:14px 0;line-height:1.6}
+code{font-family:"Sarasa Mono SC",Consolas,monospace}
+p code{background:#eef1f5;color:#c0392b;padding:1px 6px;border-radius:4px;font-size:13px}
+blockquote{border-left:4px solid #f0b429;background:#fffaf0;padding:10px 16px;color:#7a6a45;font-size:14px;margin:14px 0;border-radius:0 8px 8px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;margin:14px 0}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left}th{background:#f4f6f9}
+.prevnext{display:flex;justify-content:space-between;font-size:14px;margin-top:26px;padding-top:16px;border-top:1px dashed var(--line)}
+.tag{display:inline-block;background:#eef3fe;color:var(--brand);border-radius:4px;padding:2px 10px;font-size:12.5px;margin-right:8px}
+.tags{margin:20px 0}
+.side .card{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
+.side h3{font-size:15px;margin-bottom:12px;padding-left:9px;border-left:3px solid var(--brand)}
+.side li{list-style:none;font-size:13.5px;margin-bottom:9px;color:#4a5a6a}
+footer{border-top:1px solid var(--line);background:#fff;padding:22px 0;text-align:center;font-size:12.5px;color:var(--sub)}
+@media(max-width:780px){.main{grid-template-columns:1fr}article{padding:20px 18px}}
+</style>
+</head>
+<body>
+<header><div class="wrap nav">
+<a class="logo" href="/">随笔<b>小站</b></a>
+<a href="/">首页</a><a href="/archive.html">归档</a><a href="/about.html">关于</a><a href="/feed.xml">RSS</a>
+</div></header>
+<div class="wrap main">
+<article>
+<h1>用 tcpdump 排查偶发丢包的完整思路</h1>
+<div class="meta"><span>2026-01-27</span><span>分类：网络</span><span>字数：约 3500 字</span><span>阅读 3,842</span></div>
+
+<p>业务反馈：每天早高峰有零星 <code>connect timeout</code>，重试即好。客户端说服务端没响应，服务端说没看到连接进来。这种案子，日志是没用的，只能抓包。</p>
+
+<h2>第一步：确定抓哪里</h2>
+<p>链路上每一个中间设备都可能是凶手。我的习惯是从<strong>离两端最近的点同时抓</strong>：客户端侧和服务端侧各起一个 <code>tcpdump</code>，同一时刻对齐时钟（<code>date +%s.%N</code> 先记一下），之后拿同一组流在两端的表现做对比。</p>
+<pre><code># 只抓目标端口，BPF 表达式越窄越好，晚了就全是噪音
+tcpdump -i any -s 96 -W 20 -G 60 -w /tmp/edge-%H:%M:%S.pcap \
+    'tcp port 8443 and (tcp[tcpflags] &amp; (tcp-syn|tcp-rst) != 0) or icmp'</code></pre>
+<p><code>-s 96</code> 足够覆盖以太网头 + IP 头 + TCP 头；全天抓包务必用 <code>-W/-G</code> 轮转，否则 pcap 写满磁盘是次生事故。</p>
+
+<h2>第二步：找"消失的 SYN"</h2>
+<p>两端 pcap 对齐后，把客户端发出的 SYN 序列号列表和服务端收到的对齐：</p>
+<table><tr><th>客户端发出 SYN</th><th>服务端收到 SYN</th><th>结论</th></tr>
+<tr><td>seq=10241</td><td>seq=10241 ✓</td><td>链路通，问题在服务端接受队列</td></tr>
+<tr><td>seq=20733</td><td>—</td><td>丢在路上，看中间设备</td></tr>
+<tr><td>seq=31980</td><td>收到但无 SYN-ACK</td><td>半连接队列溢出，看 <code>syntax: netstat -s | grep -i listen</code></td></tr></table>
+
+<blockquote>这次的案子属于第一类的变体：SYN 都到了，但服务端 <code>SYN-ACK</code> 有 0.3% 没回——最后查明是容器节点的 conntrack 表在早高峰打到 <code>nf_conntrack_max</code>，新流被静默丢弃。</blockquote>
+
+<h2>第三步：定量而不是定性</h2>
+<pre><code># 重传率：每万包的 retransmits
+tcpstat -i eth0 -l 60 | awk '{print $4/$3*10000, "retrans/10k"}'
+# conntrack 丢弃计数
+conntrack -S | awk '/insert_failed/{print $1, $2}'</code></pre>
+<p>没有数字，你就没法判断"修没修好"，更没法在复盘会上把结论从"我觉得"升级成"数据表明"。</p>
+
+<h2>收尾清单</h2>
+<p>① 抓包文件记得脱敏再存档；② <code>tcpdump</code> 进程用完就杀，别留 <code>-w</code> 写满盘的经典事故；③ 把这次的 BPF 表达式沉淀进值班手册，下一个同学就不用重新发明轮子。</p>
+
+<div class="tags"><a class="tag" href="#">网络</a><a class="tag" href="#">Linux</a><a class="tag" href="#">排障</a></div>
+<div class="prevnext"><a href="/post-nas.html">← 退役笔记本改家庭 NAS 第 300 天</a><a href="/post-go-trap.html">记一次 Go map 故障 →</a></div>
+</article>
+<aside class="side">
+  <div class="card"><h3>相关阅读</h3><ul>
+    <li><a href="/post-go-trap.html">记一次 Go map 遍历顺序引发的线上故障</a></li>
+    <li><a href="/post-nginx-log.html">从 nginx access log 里揪出扫端口的人</a></li>
+  </ul></div>
+</aside>
+</div>
+<footer><div class="wrap">
+<p>© 2022-2026 随笔小站 · <a href="#">沪ICP备2023019827号-1</a> · Powered by Hugo &amp; PaperMod</p>
+</div></footer>
+</body>
+</html>

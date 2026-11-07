@@ -1,0 +1,147 @@
+mixed-port: 7897
+
+allow-lan: true
+
+mode: rule
+
+log-level: info
+
+ipv6: false
+
+unified-delay: true
+
+tcp-concurrent: false
+
+find-process-mode: strict
+
+global-client-fingerprint: chrome
+
+dns:
+  enable: true
+  listen: 127.0.0.1:5335
+  use-hosts: true
+  ipv6: false
+  respect-rules: false
+  enhanced-mode: fake-ip
+  default-nameserver: [223.5.5.5, 119.29.29.29]
+  nameserver: [223.5.5.5, 119.29.29.29]
+  fake-ip-range: 198.18.0.1/16
+  fallback: ['https://dns.alidns.com/dns-query']
+  fake-ip-filter: ['*.lan', '*.local', localhost, '*.msftconnecttest.com', '*.msftncsi.com', '*.nintendo.net', '*.playstation.net', '*.xboxlive.com', stun.*, time.*]
+
+profile:
+  store-selected: true
+  store-fake-ip: false
+
+sniffer:
+  enable: true
+  parse-pure-ip: false
+  sniff:
+    HTTP:
+      ports:
+        - 80
+        - 8080-8880
+      override-destination: true
+    TLS:
+      ports:
+        - 443
+        - 8443
+
+proxies:
+  - {name: xhttp, type: vless, server: example.com, port: 443, encryption: none, uuid: uuid-1, network: xhttp, tls: true, udp: true, servername: example.com, client-fingerprint: chrome, reality-opts: {public-key: pub, short-id: abcd, spider-x: /spider}, xhttp-opts: {path: /demo, mode: auto, no-grpc-header: false}}
+
+proxy-groups:
+  - {name: "🚀 节点选择", type: select, proxies: [⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: ⚡ 自动选择, type: url-test, proxies: [xhttp], url: 'https://www.gstatic.com/generate_204', interval: 300, lazy: false}
+  - {name: "🤖 AI 服务", type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: "🔍 谷歌服务", type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: "🏠 私有网络", type: select, proxies: [DIRECT, REJECT, "🚀 节点选择", ⚡ 自动选择]}
+  - {name: "🔒 国内服务", type: select, proxies: [DIRECT, REJECT, "🚀 节点选择", ⚡ 自动选择]}
+  - {name: "📲 电报消息", type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: "🐱 代码托管", type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: ☁️ 微软云盘, type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: Ⓜ️ 微软服务, type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: "🍏 苹果服务", type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: "🎬 奈飞", type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: "🏰 迪士尼+", type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: "📺 欧美流媒体", type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: "🎌 亚洲流媒体", type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: "🌍 非中国", type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+  - {name: "🐟 漏网之鱼", type: select, proxies: ["🚀 节点选择", ⚡ 自动选择, DIRECT, REJECT, xhttp]}
+
+rule-providers:
+  category-ai-chat-!cn: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/category-ai-chat-!cn.mrs', path: ./ruleset/category-ai-chat-!cn.mrs, interval: 86400, format: mrs}
+  openai: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/openai.mrs', path: ./ruleset/openai.mrs, interval: 86400, format: mrs}
+  anthropic: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/anthropic.mrs', path: ./ruleset/anthropic.mrs, interval: 86400, format: mrs}
+  google: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/google.mrs', path: ./ruleset/google.mrs, interval: 86400, format: mrs}
+  google-ip: {type: http, behavior: ipcidr, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/google.mrs', path: ./ruleset/google-ip.mrs, interval: 86400, format: mrs}
+  private: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/private.mrs', path: ./ruleset/private.mrs, interval: 86400, format: mrs}
+  private-ip: {type: http, behavior: ipcidr, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/private.mrs', path: ./ruleset/private-ip.mrs, interval: 86400, format: mrs}
+  geolocation-cn: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-cn.mrs', path: ./ruleset/geolocation-cn.mrs, interval: 86400, format: mrs}
+  cn-ip: {type: http, behavior: ipcidr, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/cn.mrs', path: ./ruleset/cn-ip.mrs, interval: 86400, format: mrs}
+  cn: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/cn.mrs', path: ./ruleset/cn.mrs, interval: 86400, format: mrs}
+  telegram: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/telegram.mrs', path: ./ruleset/telegram.mrs, interval: 86400, format: mrs}
+  telegram-ip: {type: http, behavior: ipcidr, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/telegram.mrs', path: ./ruleset/telegram-ip.mrs, interval: 86400, format: mrs}
+  github: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/github.mrs', path: ./ruleset/github.mrs, interval: 86400, format: mrs}
+  gitlab: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/gitlab.mrs', path: ./ruleset/gitlab.mrs, interval: 86400, format: mrs}
+  atlassian: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/atlassian.mrs', path: ./ruleset/atlassian.mrs, interval: 86400, format: mrs}
+  onedrive: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/onedrive.mrs', path: ./ruleset/onedrive.mrs, interval: 86400, format: mrs}
+  microsoft: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/microsoft.mrs', path: ./ruleset/microsoft.mrs, interval: 86400, format: mrs}
+  apple: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple.mrs', path: ./ruleset/apple.mrs, interval: 86400, format: mrs}
+  icloud: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/icloud.mrs', path: ./ruleset/icloud.mrs, interval: 86400, format: mrs}
+  netflix: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/netflix.mrs', path: ./ruleset/netflix.mrs, interval: 86400, format: mrs}
+  netflix-ip: {type: http, behavior: ipcidr, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geoip/netflix.mrs', path: ./ruleset/netflix-ip.mrs, interval: 86400, format: mrs}
+  disney: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/disney.mrs', path: ./ruleset/disney.mrs, interval: 86400, format: mrs}
+  hbo: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/hbo.mrs', path: ./ruleset/hbo.mrs, interval: 86400, format: mrs}
+  hulu: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/hulu.mrs', path: ./ruleset/hulu.mrs, interval: 86400, format: mrs}
+  primevideo: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/primevideo.mrs', path: ./ruleset/primevideo.mrs, interval: 86400, format: mrs}
+  apple-tvplus: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/apple-tvplus.mrs', path: ./ruleset/apple-tvplus.mrs, interval: 86400, format: mrs}
+  spotify: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/spotify.mrs', path: ./ruleset/spotify.mrs, interval: 86400, format: mrs}
+  twitch: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/twitch.mrs', path: ./ruleset/twitch.mrs, interval: 86400, format: mrs}
+  dazn: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/dazn.mrs', path: ./ruleset/dazn.mrs, interval: 86400, format: mrs}
+  bahamut: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/bahamut.mrs', path: ./ruleset/bahamut.mrs, interval: 86400, format: mrs}
+  biliintl: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/biliintl.mrs', path: ./ruleset/biliintl.mrs, interval: 86400, format: mrs}
+  niconico: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/niconico.mrs', path: ./ruleset/niconico.mrs, interval: 86400, format: mrs}
+  abema: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/abema.mrs', path: ./ruleset/abema.mrs, interval: 86400, format: mrs}
+  viu: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/viu.mrs', path: ./ruleset/viu.mrs, interval: 86400, format: mrs}
+  kktv: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/kktv.mrs', path: ./ruleset/kktv.mrs, interval: 86400, format: mrs}
+  geolocation-!cn: {type: http, behavior: domain, url: 'https://github.com/MetaCubeX/meta-rules-dat/raw/refs/heads/meta/geo/geosite/geolocation-!cn.mrs', path: ./ruleset/geolocation-!cn.mrs, interval: 86400, format: mrs}
+
+rules:
+  - "RULE-SET,category-ai-chat-!cn,🤖 AI 服务"
+  - "RULE-SET,openai,🤖 AI 服务"
+  - "RULE-SET,anthropic,🤖 AI 服务"
+  - "RULE-SET,google,🔍 谷歌服务"
+  - "RULE-SET,google-ip,🔍 谷歌服务,no-resolve"
+  - "RULE-SET,private,🏠 私有网络"
+  - "RULE-SET,private-ip,🏠 私有网络,no-resolve"
+  - "RULE-SET,geolocation-cn,🔒 国内服务"
+  - "RULE-SET,cn-ip,🔒 国内服务,no-resolve"
+  - "RULE-SET,telegram,📲 电报消息"
+  - "RULE-SET,telegram-ip,📲 电报消息,no-resolve"
+  - "RULE-SET,github,🐱 代码托管"
+  - "RULE-SET,gitlab,🐱 代码托管"
+  - "RULE-SET,atlassian,🐱 代码托管"
+  - "RULE-SET,onedrive,☁️ 微软云盘"
+  - "RULE-SET,microsoft,Ⓜ️ 微软服务"
+  - "RULE-SET,apple,🍏 苹果服务"
+  - "RULE-SET,icloud,🍏 苹果服务"
+  - "RULE-SET,netflix,🎬 奈飞"
+  - "RULE-SET,netflix-ip,🎬 奈飞,no-resolve"
+  - "RULE-SET,disney,🏰 迪士尼+"
+  - "RULE-SET,hbo,📺 欧美流媒体"
+  - "RULE-SET,hulu,📺 欧美流媒体"
+  - "RULE-SET,primevideo,📺 欧美流媒体"
+  - "RULE-SET,apple-tvplus,📺 欧美流媒体"
+  - "RULE-SET,spotify,📺 欧美流媒体"
+  - "RULE-SET,twitch,📺 欧美流媒体"
+  - "RULE-SET,dazn,📺 欧美流媒体"
+  - "RULE-SET,bahamut,🎌 亚洲流媒体"
+  - "RULE-SET,biliintl,🎌 亚洲流媒体"
+  - "RULE-SET,niconico,🎌 亚洲流媒体"
+  - "RULE-SET,abema,🎌 亚洲流媒体"
+  - "RULE-SET,viu,🎌 亚洲流媒体"
+  - "RULE-SET,kktv,🎌 亚洲流媒体"
+  - "RULE-SET,geolocation-!cn,🌍 非中国"
+  - "RULE-SET,cn,🔒 国内服务"
+  - "MATCH,🐟 漏网之鱼"

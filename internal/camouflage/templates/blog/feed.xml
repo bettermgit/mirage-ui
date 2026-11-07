@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+<channel>
+<title>随笔小站</title>
+<link>/</link>
+<description>记录后端开发、网络排查和日常思考</description>
+<language>zh-CN</language>
+<lastBuildDate>Sat, 14 Mar 2026 21:30:00 +0800</lastBuildDate>
+<atom:link href="/feed.xml" rel="self" type="application/rss+xml"/>
+<item>
+<title>记一次 Go map 遍历顺序引发的线上故障</title>
+<link>/post-go-trap.html</link>
+<guid>/post-go-trap.html</guid>
+<pubDate>Sat, 14 Mar 2026 21:30:00 +0800</pubDate>
+<description>测试环境一切正常，生产偶发对账不一致。排查到最后，凶手是最熟悉的陌生人。</description>
+</item>
+<item>
+<title>用 tcpdump 排查偶发丢包的完整思路</title>
+<link>/post-tcpdump.html</link>
+<guid>/post-tcpdump.html</guid>
+<pubDate>Tue, 27 Jan 2026 19:12:00 +0800</pubDate>
+<description>客户端报 connect timeout，服务端日志一无所获。抓包，是唯一诚实的答案。</description>
+</item>
+<item>
+<title>把退役的笔记本改成家庭 NAS 的第 300 天</title>
+<link>/post-nas.html</link>
+<guid>/post-nas.html</guid>
+<pubDate>Sun, 02 Nov 2025 10:40:00 +0800</pubDate>
+<description>电费、噪音、掉盘、断电、备份策略，以及值不值。</description>
+</item>
+</channel>
+</rss>
