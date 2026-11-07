@@ -59,10 +59,10 @@ Max+ 395 workstation (UD-IQ4_XS quantization).
 
 ```bash
 # Prebuilt binaries from your repository's Releases (recommended)
-curl -fsSL https://raw.githubusercontent.com/<you>/mirage-ui/main/install-fork.sh | FORK_REPO=<you>/mirage-ui bash
+curl -fsSL https://raw.githubusercontent.com/bettermgit/mirage-ui/main/install-fork.sh | bash
 
 # Or build from source on the server (Go 1.27+ / Node 26+):
-git clone https://github.com/<you>/mirage-ui && cd mirage-ui && bash install-fork.sh --from-source
+git clone https://github.com/bettermgit/mirage-ui && cd mirage-ui && bash install-fork.sh --from-source
 ```
 
 Initial credentials and ports can be supplied instead of generated:
@@ -106,11 +106,12 @@ HTTP-01 (port 80) or DNS-01.
 ## Maintainers: publishing a release
 
 ```bash
-cd frontend && npm ci && npm run build && cd ..
-CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o x-ui-linux-amd64 .
-CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o x-ui-linux-arm64 .
-gh release create v1.0.0 x-ui-linux-amd64 x-ui-linux-arm64
+git tag v1.0.1 && git push origin v1.0.1
 ```
+
+Pushing a `v*` tag triggers the release workflow, which builds both
+`x-ui-linux-amd64` and `x-ui-linux-arm64` and attaches them to the tag's
+Release. To rebuild an existing tag: Actions → release → Run workflow.
 
 ## Development
 

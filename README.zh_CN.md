@@ -48,10 +48,10 @@
 
 ```bash
 # 从你仓库的 Releases 拉取预编译二进制（推荐）
-curl -fsSL https://raw.githubusercontent.com/<you>/mirage-ui/main/install-fork.sh | FORK_REPO=<you>/mirage-ui bash
+curl -fsSL https://raw.githubusercontent.com/bettermgit/mirage-ui/main/install-fork.sh | bash
 
 # 或在服务器上源码编译（需 Go 1.27+ / Node 26+）：
-git clone https://github.com/<you>/mirage-ui && cd mirage-ui && bash install-fork.sh --from-source
+git clone https://github.com/bettermgit/mirage-ui && cd mirage-ui && bash install-fork.sh --from-source
 ```
 
 初始账号密码与端口也可以自行指定，不必使用随机生成的：
@@ -93,11 +93,12 @@ docker run -d --name mirage-ui --restart unless-stopped --network host \
 ## 维护者：发布 Release
 
 ```bash
-cd frontend && npm ci && npm run build && cd ..
-CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o x-ui-linux-amd64 .
-CGO_ENABLED=1 GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o x-ui-linux-arm64 .
-gh release create v1.0.0 x-ui-linux-amd64 x-ui-linux-arm64
+git tag v1.0.1 && git push origin v1.0.1
 ```
+
+推送 `v*` 标签即触发发版工作流，自动构建 `x-ui-linux-amd64` 与
+`x-ui-linux-arm64` 两个二进制并挂到对应 Release。为已存在的标签重新构建：
+Actions → release → Run workflow。
 
 ## 开发
 

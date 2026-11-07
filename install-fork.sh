@@ -5,7 +5,7 @@
 # Downloads the prebuilt binary from this repository's GitHub Releases,
 # installs a systemd service and prints the initial panel credentials.
 #
-#   curl -fsSL https://raw.githubusercontent.com/<you>/mirage-ui/main/install-fork.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/bettermgit/mirage-ui/main/install-fork.sh | bash
 #
 # Environment overrides:
 #   FORK_REPO=you/mirage-ui   repository whose Releases hold the binaries
@@ -18,7 +18,7 @@
 # database); the temp env file is removed right after.
 set -euo pipefail
 
-FORK_REPO="${FORK_REPO:-tengems/mirage-ui}"
+FORK_REPO="${FORK_REPO:-bettermgit/mirage-ui}"
 FORK_VERSION="${FORK_VERSION:-latest}"
 PANEL_PORT="${XUI_PANEL_PORT:-5566}"
 SEEDED_USER="${XUI_USERNAME:-}"
