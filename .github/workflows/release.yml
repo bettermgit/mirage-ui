@@ -46,5 +46,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "${{ inputs.tag || github.ref_name }}" \
+          TAG="${{ inputs.tag || github.ref_name }}"
+          gh release create "$TAG" --verify-tag --title "$TAG" --latest \
+            --repo "$GITHUB_REPOSITORY" 2>/dev/null || true
+          gh release upload "$TAG" \
             x-ui-linux-${{ matrix.arch }} --clobber --repo "$GITHUB_REPOSITORY"

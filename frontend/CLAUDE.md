@@ -1,7 +1,7 @@
 # frontend/CLAUDE.md
 
 Frontend agent guide. Full detail: `frontend/README.md` and the root
-`CONTRIBUTING.md` ("Working on the frontend"). This is the short version.
+`CLAUDE.md`. This is the short version.
 
 ## What this is
 React 19 + Ant Design 6 + Vite 8 + TypeScript. The Vite config is

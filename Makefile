@@ -88,11 +88,11 @@ build: build-fe ## Build the frontend then the Go binary
 build-storybook: ## Build the static Storybook (compile-checks all stories)
 	cd $(FRONTEND) && npm run build-storybook
 
-# The PR gate. Matches ci.yml: codegen freshness, both linters, the formatter,
-# typecheck, both test suites, a full build, the Storybook compile-check and the
-# docs spec check. The dependency audit is a separate target: it needs the
+# The full local gate: codegen freshness, both linters, the formatter,
+# typecheck, both test suites, a full build and the Storybook compile-check.
+# The dependency audit is a separate target: it needs the
 # network and a live advisory database, so an unchanged commit could pass today
 # and fail tomorrow.
 .PHONY: verify
-verify: gen-check lint format-check typecheck test build build-storybook ## Full local gate (mirrors CI)
+verify: gen-check lint format-check typecheck test build build-storybook ## Full local gate
 	@echo "verify: OK"
