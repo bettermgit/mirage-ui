@@ -20,8 +20,7 @@
 
 本发行版中的**每一处代码修改、Bug 修复、测试与文档**——包括伪装站的抗扫描
 加固、订阅工作台修复、本 README 与一键安装脚本——全程由 **Qwen3.8-Flash**
-模型在本地 [llama.cpp](https://github.com/ggml-org/llama.cpp) 环境
-（单台 AMD Ryzen AI Max+ 395 工作站，UD-IQ4_XS 量化）编写、测试并整理完成。
+模型编写、测试并整理完成。
 
 ## 核心特性
 

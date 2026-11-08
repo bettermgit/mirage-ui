@@ -24,9 +24,7 @@ All original copyright and license texts are retained (`LICENSE`,
 Every code change, bug fix, test and document in this distribution —
 including the camouflage engine's hardening, the workbench fixes, this
 README and the one-key installer — was written, tested and organized
-end-to-end by **Qwen3.8-Flash**, running locally on
-[llama.cpp](https://github.com/ggml-org/llama.cpp) on a single AMD Ryzen AI
-Max+ 395 workstation (UD-IQ4_XS quantization).
+end-to-end by the **Qwen3.8-Flash** model.
 
 ## Features
 
