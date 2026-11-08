@@ -78,6 +78,20 @@ Both also work on the Docker image (`docker run -e XUI_USERNAME=... -e
 XUI_PASSWORD=...`) and apply only while the database has no users — they can
 never overwrite an existing account.
 
+### Interactive mode & management menu
+
+Run the script from a terminal and it interviews you instead: panel port
+(validated, in-use check), and optionally your own username and password
+(hidden, typed twice). Piped or fully answered via env it stays fully
+unattended. The Xray core is fetched automatically at install time; if that
+download fails the panel can still add it later in Settings.
+
+Re-running the script on an installed server opens the **management menu**:
+start / stop / restart / status, change port, change login (username and
+password, verified against the panel), show access info, update to the
+latest release (previous binary kept, auto-rollback on failure), and
+uninstall (data kept unless confirmed).
+
 The installer prints the panel URL and initial account. Security notes:
 
 1. **Change the password on first login**
