@@ -129,10 +129,40 @@ need_root_checks() {
 
 detect_asset() {
   case "$(uname -m)" in
-    x86_64)  ASSET=x-ui-linux-amd64 ;;
-    aarch64) ASSET=x-ui-linux-arm64 ;;
+    x86_64)  ASSET=x-ui-linux-amd64;  XRAY_ASSET=Xray-linux-64.zip      ;;
+    aarch64) ASSET=x-ui-linux-arm64;  XRAY_ASSET=Xray-linux-arm64-v8a.zip ;;
     *) die "Unsupported architecture: $(uname -m) (amd64/arm64 only)" ;;
   esac
+}
+
+# install_xray_core: best effort; the panel also offers it later in Settings.
+install_xray_core() {
+  local dest="${XUI_FOLDER}/bin/xray-linux-amd64"
+  [[ "$(uname -m)" == aarch64 ]] && dest="${XUI_FOLDER}/bin/xray-linux-arm64"
+  local tmp
+  tmp="$(mktemp -d)"
+  say "Downloading xray core (latest release) ..."
+  if ! curl -fsSL --max-time 120 \
+      "https://github.com/XTLS/Xray-core/releases/latest/download/${XRAY_ASSET}" -o "$tmp/xray.zip"; then
+    rm -rf "$tmp"
+    warn "xray download failed; skipped (panel Settings can install it later)."
+    return 0
+  fi
+  if command -v unzip >/dev/null; then
+    unzip -p "$tmp/xray.zip" xray > "$dest" || { rm -rf "$tmp"; warn "xray extract failed; skipped."; return 0; }
+  elif command -v python3 >/dev/null; then
+    python3 - "$tmp/xray.zip" > "$dest" <<'PY' || { rm -rf "$tmp"; warn "xray extract failed; skipped."; return 0; }
+import sys, zipfile
+sys.stdout.buffer.write(zipfile.ZipFile(sys.argv[1]).read("xray"))
+PY
+  else
+    rm -rf "$tmp"
+    warn "Neither unzip nor python3 available; xray skipped (panel Settings can install it later)."
+    return 0
+  fi
+  chmod 0755 "$dest"
+  rm -rf "$tmp"
+  say "xray core installed."
 }
 
 download_binary() {
@@ -148,12 +178,18 @@ download_binary() {
     return
   fi
   if [[ "$FORK_VERSION" == "latest" ]]; then
-    TAG_JSON="$(curl -fsSL "https://api.github.com/repos/${FORK_REPO}/releases/latest")" \
-      || die "Cannot read Releases of ${FORK_REPO}. Set FORK_REPO=owner/repo, or pass --from-source."
-    FORK_VERSION="$(printf '%s' "$TAG_JSON" | grep -m1 '"tag_name"' | cut -d'"' -f4)"
+    if TAG_JSON="$(curl -fsS --max-time 15 "https://api.github.com/repos/${FORK_REPO}/releases/latest" 2>/dev/null)"; then
+      FORK_VERSION="$(printf '%s' "$TAG_JSON" | grep -o '"tag_name": *"[^"]*"' | head -1 | cut -d'"' -f4)"
+    fi
+    [[ "$FORK_VERSION" == v* ]] || FORK_VERSION="latest"
   fi
-  URL="https://github.com/${FORK_REPO}/releases/download/${FORK_VERSION}/${ASSET}"
-  say "Downloading ${ASSET} (${FORK_VERSION}) ..."
+  if [[ "$FORK_VERSION" == "latest" ]]; then
+    URL="https://github.com/${FORK_REPO}/releases/latest/download/${ASSET}"
+    say "Downloading ${ASSET} (latest release) ..."
+  else
+    URL="https://github.com/${FORK_REPO}/releases/download/${FORK_VERSION}/${ASSET}"
+    say "Downloading ${ASSET} (${FORK_VERSION}) ..."
+  fi
   TMP_BIN="$(mktemp)"; trap 'rm -f "$TMP_BIN"' EXIT
   curl -fL "$URL" -o "$TMP_BIN" \
     || die "Download failed: $URL
@@ -238,6 +274,7 @@ install_fresh() {
   mkdir -p "$XUI_FOLDER"/{bin,logs,acc}
   install -m 0755 "$BINARY_SRC" "$BINARY"
   touch "$XUI_FOLDER/x-ui-access.log"
+  install_xray_core
   write_unit
   say "Starting service (port ${PANEL_PORT}) ..."
   if [[ -n "$SEEDED_USER" ]]; then
