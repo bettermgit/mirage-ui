@@ -287,6 +287,98 @@ install_fresh() {
   collect_creds_after_install
   say "Done."
   print_info
+  if is_tty && [[ -n "${SHOW_USER:-}" && -n "${SHOW_PASS:-}" ]]; then
+    local up=""
+    ask up "Set up HTTPS with a free Let's Encrypt certificate now? (needs a domain + free port 80)" "n"
+    [[ "${up,,}" =~ ^(y|yes)$ ]] && apply_https "$SHOW_USER" "$SHOW_PASS"
+  fi
+}
+
+# ---------- HTTPS certificate (acme.sh + HTTP-01) ----------
+
+# configure_panel_https <port> <user> <pass> <crt> <key>
+configure_panel_https() {
+  local port="$1" user="$2" pass="$3" crt="$4" key="$5"
+  local base="http://127.0.0.1:$port" jar tok all body
+  jar="$(mktemp)"
+  tok="$(curl -s -m 10 -c "$jar" "$base/csrf-token" | sed -n 's/.*"obj":"\([^"]*\)".*/\1/p')"
+  curl -s -m 10 -b "$jar" -c "$jar" -X POST "$base/login" -H "X-CSRF-Token: $tok" \
+    --data-urlencode "username=$user" --data-urlencode "password=$pass" >/dev/null
+  tok="$(curl -s -m 10 -b "$jar" -c "$jar" "$base/csrf-token" | sed -n 's/.*"obj":"\([^"]*\)".*/\1/p')"
+  all="$(curl -s -m 10 -b "$jar" -X POST "$base/panel/api/setting/all" -H "X-CSRF-Token: $tok")"
+  if ! body="$(ALL="$all" CRT="$crt" KEY="$key" python3 - <<'PY'
+import json, os, urllib.parse
+d = json.loads(os.environ["ALL"])["obj"]
+d["webCertFile"] = os.environ["CRT"]
+d["webKeyFile"] = os.environ["KEY"]
+print(urllib.parse.urlencode(d))
+PY
+)"; then
+    rm -f "$jar"
+    return 1
+  fi
+  curl -s -m 15 -b "$jar" -X POST "$base/panel/api/setting/update" -H "X-CSRF-Token: $tok" \
+    -H "Content-Type: application/x-www-form-urlencoded" --data "$body"
+  rm -f "$jar"
+}
+
+apply_https() {
+  local user="$1" pass="$2" port
+  port="$(current_port)"
+  local domain email
+  echo "Free HTTPS certificate via Let's Encrypt (acme.sh, HTTP-01 challenge)."
+  echo "The domain must already resolve to this server and port 80 must be free."
+  ask domain "Domain"
+  [[ "$domain" =~ ^[A-Za-z0-9.-]+$ ]] || { warn "Invalid domain."; return; }
+  ask email "Email for the ACME account"
+  [[ "$email" == *@* ]] || { warn "Enter a valid email address."; return; }
+  if ss -Hltn 2>/dev/null | awk '{print $4}' | grep -qE "[:.]80$"; then
+    warn "Something already listens on port 80; stop it first (the challenge binds it)."
+    return
+  fi
+  local acme_home="${ACME_HOME:-$HOME/.acme.sh}" acme
+  if [[ ! -x "$acme_home/acme.sh" ]]; then
+    say "Installing acme.sh ..."
+    if ! curl -fsSL --max-time 60 "https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh" -o /tmp/acme-install.sh \
+      && ! curl -fsSL --max-time 60 https://get.acme.sh -o /tmp/acme-install.sh; then
+      warn "Could not download acme.sh; aborting certificate setup."
+      return
+    fi
+    bash /tmp/acme-install.sh --install --home "$acme_home" --accountemail "$email" >/dev/null 2>&1 \
+      || { warn "acme.sh installation failed."; return; }
+  fi
+  acme="$acme_home/acme.sh"
+  say "Requesting certificate for ${domain} (port 80 must stay reachable from the Internet) ..."
+  if ! "$acme" --home "$acme_home" --server letsencrypt --issue --standalone --keylength ec-256 \
+      -d "$domain" > /tmp/acme-issue.log 2>&1; then
+    warn "Issuance failed. Last lines:"
+    grep -vE "^\s*$" /tmp/acme-issue.log | tail -3 | sed 's/^/    /'
+    warn "Check: firewall/cloud security group for port 80, DNS points here, ISP does not block 80."
+    return
+  fi
+  mkdir -p "$XUI_FOLDER/ssl"
+  "$acme" --home "$acme_home" --install-cert -d "$domain" --ecc \
+    --key-file "${XUI_FOLDER}/ssl/${domain}.key" \
+    --fullchain-file "${XUI_FOLDER}/ssl/${domain}.crt" \
+    --reloadcmd "systemctl restart ${SERVICE}" >/dev/null 2>&1 \
+    || { warn "install-cert failed; see ${acme_home}/account.conf"; return; }
+  chmod 600 "${XUI_FOLDER}/ssl/${domain}.key" "${XUI_FOLDER}/ssl/${domain}.crt" 2>/dev/null || true
+  say "Applying the certificate in panel settings ..."
+  if ! grep -q '"success":true' <<<"$(configure_panel_https "$port" "$user" "$pass" \
+      "${XUI_FOLDER}/ssl/${domain}.crt" "${XUI_FOLDER}/ssl/${domain}.key")"; then
+    warn "Panel settings update failed; certificate files are in ${XUI_FOLDER}/ssl/ (set paths in Settings manually)."
+    return
+  fi
+  # Apply now regardless of the renewal hook; acme.sh reloadcmd also restarts later.
+  systemctl restart "$SERVICE"
+  sleep 8
+  echo -e "${cyan}  Panel URL : https://${domain}:${port}/${plain}"
+  if curl -ks -o /dev/null -m 10 "https://127.0.0.1:${port}/"; then
+    say "HTTPS is live."
+  else
+    warn "Not answering on https yet: journalctl -u ${SERVICE} -n 30"
+  fi
+  echo "Renewals run automatically (acme.sh cron) and reload this service."
 }
 
 change_port() {
@@ -367,6 +459,20 @@ uninstall() {
   fi
 }
 
+menu_https() {
+  local port user pass
+  port="$(current_port)"
+  echo "Enter the current panel login (needed to store the certificate paths)."
+  read -rp "Username: " user
+  if ! IFS= read -rsp "Password (hidden): " pass; then echo; return; fi
+  echo
+  if ! panel_login "$port" "$user" "$pass"; then
+    warn "Login rejected, or panel unreachable on port ${port}."
+    return
+  fi
+  apply_https "$user" "$pass"
+}
+
 menu() {
   local choice
   while true; do
@@ -376,7 +482,8 @@ menu() {
     echo "  3) Restart                  4) Status"
     echo "  5) Change port              6) Change login (user/password)"
     echo "  7) Show access info         8) Update to latest release"
-    echo "  9) Uninstall                0) Quit"
+    echo "  9) Uninstall                10) HTTPS certificate (issue/renew)"
+    echo "  0) Quit"
     if ! IFS= read -rp "> " choice; then return; fi
     case "$choice" in
       1) systemctl start "$SERVICE";;
@@ -388,6 +495,7 @@ menu() {
       7) print_info;;
       8) update_fork;;
       9) uninstall; return;;
+      10) menu_https;;
       0|"") return;;
       *) warn "Unknown option.";;
     esac

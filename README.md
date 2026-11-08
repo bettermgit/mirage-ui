@@ -89,8 +89,8 @@ download fails the panel can still add it later in Settings.
 Re-running the script on an installed server opens the **management menu**:
 start / stop / restart / status, change port, change login (username and
 password, verified against the panel), show access info, update to the
-latest release (previous binary kept, auto-rollback on failure), and
-uninstall (data kept unless confirmed).
+latest release (previous binary kept, auto-rollback on failure), issue or
+renew a free HTTPS certificate, and uninstall (data kept unless confirmed).
 
 The installer prints the panel URL and initial account. Security notes:
 
@@ -112,10 +112,14 @@ The panel database persists in the `mirage-xui` volume.
 
 ## HTTPS
 
-Panel and subscription server accept standard certificate settings
-(Settings → SSL). Pair with any ACME tool (acme.sh / certbot) for automated
-issuance and renewal; when port 443 is taken by REALITY, validate via
-HTTP-01 (port 80) or DNS-01.
+The installer can run the whole certificate flow for you: at the end of
+installation, or later from the management menu (option 10), it installs
+acme.sh, issues a free Let's Encrypt certificate via HTTP-01 (port 80 must
+be free and reachable), stores it under the install folder, configures the
+panel through its own API and restarts it — renewal stays automatic (acme.sh
+cron reloads the service). Alternatively set certificate paths manually in
+Settings → SSL with any ACME tool (acme.sh / certbot); when port 443 is
+taken by REALITY, validate via HTTP-01 (port 80) or DNS-01.
 
 ## Maintainers: publishing a release
 
