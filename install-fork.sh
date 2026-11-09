@@ -208,10 +208,16 @@ install_xray_core() {
   fi
   if command -v unzip >/dev/null; then
     unzip -p "$tmp/xray.zip" xray > "$dest" || { rm -rf "$tmp"; warn "xray extract failed; skipped."; return 0; }
+    # xray routing rules need the geo .dat files; config.json is panel-owned.
+    unzip -o -q "$tmp/xray.zip" "*.dat" -d "${XUI_FOLDER}/bin/" 2>/dev/null || true
   elif command -v python3 >/dev/null; then
-    python3 - "$tmp/xray.zip" > "$dest" <<'PY' || { rm -rf "$tmp"; warn "xray extract failed; skipped."; return 0; }
-import sys, zipfile
-sys.stdout.buffer.write(zipfile.ZipFile(sys.argv[1]).read("xray"))
+    python3 - "$tmp/xray.zip" "$dest" "${XUI_FOLDER}/bin" <<'PY' || { rm -rf "$tmp"; warn "xray extract failed; skipped."; return 0; }
+import os, sys, zipfile
+z, dest, bin_dir = zipfile.ZipFile(sys.argv[1]), sys.argv[2], sys.argv[3]
+open(dest, "wb").write(z.read("xray"))
+for n in z.namelist():
+    if n.endswith(".dat"):
+        open(os.path.join(bin_dir, os.path.basename(n)), "wb").write(z.read(n))
 PY
   else
     rm -rf "$tmp"
