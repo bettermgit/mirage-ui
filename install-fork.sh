@@ -646,28 +646,32 @@ show_usage() {
 
 # ---------- main ----------
 
-case "${1:-}" in
+CMD="${1:-}"
+case "$CMD" in
   help|--help|-h) show_usage; exit 0;;
+  start|stop|restart|status|settings|enable|disable|log|update|uninstall)
+    [[ -x "$BINARY" ]] || die "Not installed yet; run the installer first."
+    need_root_checks
+    case "$CMD" in
+      start)     systemctl start "$SERVICE";;
+      stop)      systemctl stop "$SERVICE";;
+      restart)   systemctl restart "$SERVICE";;
+      status)    systemctl status "$SERVICE" --no-pager | head -12;;
+      settings)  show_settings;;
+      enable)    systemctl enable --now "$SERVICE";;
+      disable)   systemctl disable --now "$SERVICE";;
+      log)       journalctl -u "$SERVICE" -n 100 -f;;
+      update)    update_fork;;
+      uninstall) uninstall;;
+    esac
+    exit 0;;
 esac
 
-if [[ "${1:-}" == "--from-source" || "${1:-}" == "install" || -n "$PANEL_PORT" || ! -x "$BINARY" ]]; then
-  install_fresh "${1:-}"
+if [[ "$CMD" == "--from-source" || "$CMD" == "install" || -n "$PANEL_PORT" || ! -x "$BINARY" ]]; then
+  install_fresh "$CMD"
 elif is_tty; then
   need_root_checks
-  case "$1" in
-    "") menu;;
-    start)   systemctl start "$SERVICE";;
-    stop)    systemctl stop "$SERVICE";;
-    restart) systemctl restart "$SERVICE";;
-    status)  systemctl status "$SERVICE" --no-pager | head -12;;
-    settings) show_settings;;
-    enable)  systemctl enable --now "$SERVICE";;
-    disable) systemctl disable --now "$SERVICE";;
-    log)     journalctl -u "$SERVICE" -n 100 -f;;
-    update)  update_fork;;
-    uninstall) uninstall;;
-    *) show_usage; exit 1;;
-  esac
+  menu
 else
   print_info
   warn "Already installed. Run x-ui from a terminal for the management menu."
