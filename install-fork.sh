@@ -145,30 +145,38 @@ json_escape() {
   printf '%s' "$s"
 }
 
-# configure_panel_https <port> <user> <pass> <crt> <key>
+# configure_panel_https <crt> <key>: write only these two settings rows.
+# The full settings API is unsafe here: its webPort reflects the DB value,
+# not the XUI_PORT override, and a full roundtrip would persist that drift.
 configure_panel_https() {
-  local port="$1" user="$2" pass="$3" crt="$4" key="$5"
-  local base="http://127.0.0.1:$port" jar tok all body
-  jar="$(mktemp)"
-  tok="$(curl -s -m 10 -c "$jar" "$base/csrf-token" | sed -n 's/.*"obj":"\([^"]*\)".*/\1/p')"
-  curl -s -m 10 -b "$jar" -c "$jar" -X POST "$base/login" -H "X-CSRF-Token: $tok" \
-    --data-urlencode "username=$user" --data-urlencode "password=$pass" >/dev/null
-  tok="$(curl -s -m 10 -b "$jar" -c "$jar" "$base/csrf-token" | sed -n 's/.*"obj":"\([^"]*\)".*/\1/p')"
-  all="$(curl -s -m 10 -b "$jar" -X POST "$base/panel/api/setting/all" -H "X-CSRF-Token: $tok")"
-  if ! body="$(ALL="$all" CRT="$crt" KEY="$key" python3 - <<'PY'
-import json, os, urllib.parse
-d = json.loads(os.environ["ALL"])["obj"]
-d["webCertFile"] = os.environ["CRT"]
-d["webKeyFile"] = os.environ["KEY"]
-print(urllib.parse.urlencode(d))
+  local crt="$1" key="$2"
+  local db="${XUI_DB_FOLDER:-$XUI_FOLDER}/x-ui.db"
+  CRT="$crt" KEY="$key" DB="$db" python3 - <<'PY'
+import os, sqlite3
+db = sqlite3.connect(os.environ["DB"])
+for k, v in (("webCertFile", os.environ["CRT"]), ("webKeyFile", os.environ["KEY"])):
+    if not db.execute("UPDATE settings SET value=? WHERE key=?", (v, k)).rowcount:
+        db.execute("INSERT INTO settings (key, value) VALUES (?,?)", (k, v))
+db.commit()
 PY
-)"; then
-    rm -f "$jar"
+}
+
+apply_cert_paths() {
+  local crt="$1" key="$2"
+  say "Applying the certificate in panel settings ..."
+  if ! configure_panel_https "$crt" "$key"; then
+    warn "Could not write the settings; set the paths manually in Settings (files: ${crt})."
     return 1
   fi
-  curl -s -m 15 -b "$jar" -X POST "$base/panel/api/setting/update" -H "X-CSRF-Token: $tok" \
-    -H "Content-Type: application/x-www-form-urlencoded" --data "$body"
-  rm -f "$jar"
+  # Apply now regardless of the renewal hook; acme.sh reloadcmd also restarts later.
+  systemctl restart "$SERVICE"
+  sleep 8
+  local port; port="$(current_port)"
+  if curl -ks -o /dev/null -m 10 "https://127.0.0.1:${port}/"; then
+    say "HTTPS is live."
+  else
+    warn "Not answering on https yet: journalctl -u ${SERVICE} -n 30"
+  fi
 }
 
 need_root_checks() {
@@ -328,8 +336,6 @@ install_manager() {
 # ---------- HTTPS ----------
 
 apply_https() {
-  local user="$1" pass="$2" port
-  port="$(current_port)"
   local domain email
   echo "Free HTTPS certificate via Let's Encrypt (acme.sh, HTTP-01 challenge)."
   echo "The domain must already resolve to this server and port 80 must be free."
@@ -368,44 +374,27 @@ apply_https() {
     --reloadcmd "systemctl restart ${SERVICE}" >/dev/null 2>&1 \
     || { warn "install-cert failed; see ${acme_home}/account.conf"; return; }
   chmod 600 "${XUI_FOLDER}/ssl/${domain}.key" "${XUI_FOLDER}/ssl/${domain}.crt" 2>/dev/null || true
-  apply_cert_paths "$port" "$user" "$pass" "${XUI_FOLDER}/ssl/${domain}.crt" "${XUI_FOLDER}/ssl/${domain}.key"
+  apply_cert_paths "${XUI_FOLDER}/ssl/${domain}.crt" "${XUI_FOLDER}/ssl/${domain}.key"
   echo -e "  Panel URL : ${cyan}https://${domain}:${port}/${plain}"
   echo "Renewals run automatically (acme.sh cron) and reload this service."
 }
 
-apply_cert_paths() {
-  local port="$1" user="$2" pass="$3" crt="$4" key="$5"
-  say "Applying the certificate in panel settings ..."
-  if ! grep -q '"success":true' <<<"$(configure_panel_https "$port" "$user" "$pass" "$crt" "$key")"; then
-    warn "Panel settings update failed; set the paths manually in Settings (files: ${crt})."
-    return 1
-  fi
-  # Apply now regardless of the renewal hook; acme.sh reloadcmd also restarts later.
-  systemctl restart "$SERVICE"
-  sleep 8
-  if curl -ks -o /dev/null -m 10 "https://127.0.0.1:${port}/"; then
-    say "HTTPS is live."
-  else
-    warn "Not answering on https yet: journalctl -u ${SERVICE} -n 30"
-  fi
-}
-
 # Official-style SSL choice.
 ssl_choice_menu() {
-  local user="$1" pass="$2" choice
+  local choice
   echo -e "${blue}SSL configuration:${plain}"
   echo "  1) Issue a free Let's Encrypt certificate for a domain (HTTP-01, port 80)"
   echo "  2) Use existing certificate files (fullchain + key paths)"
   echo "  3) Skip (HTTP for now; configure later via menu item 6)"
   ask choice "Choose an option" "3"
   case "$choice" in
-    1) apply_https "$user" "$pass";;
+    1) apply_https;;
     2)
-      local crt key port; port="$(current_port)"
+      local crt key
       ask crt "Certificate file (fullchain .crt / .pem)"
       ask key "Private key file"
       [[ -s "$crt" && -s "$key" ]] || { warn "File not found."; return; }
-      apply_cert_paths "$port" "$user" "$pass" "$crt" "$key";;
+      apply_cert_paths "$crt" "$key";;
     *) echo "Skipped. HTTPS can be set anytime from the management menu (option 6)."; return;;
   esac
 }
@@ -451,9 +440,9 @@ install_fresh() {
   install_manager "$script_src"
   say "Mirage-UI $(installed_version) installation finished, it is running now..."
   print_info
-  if is_tty && [[ -n "${SHOW_USER:-}" && -n "${SHOW_PASS:-}" ]]; then
+  if is_tty; then
     echo
-    ssl_choice_menu "$SHOW_USER" "$SHOW_PASS"
+    ssl_choice_menu
   fi
 }
 
@@ -561,14 +550,6 @@ uninstall() {
   fi
 }
 
-menu_https() {
-  if ! read_login; then
-    warn "Login rejected, or panel unreachable on port $(current_port)."
-    return
-  fi
-  ssl_choice_menu "$LOGIN_U" "$LOGIN_P"
-}
-
 before_show_menu() {
   echo; read -rp "Press enter to return to the main menu: " _ || return
 }
@@ -606,7 +587,7 @@ menu() {
       3) change_credentials;;
       4) change_port;;
       5) show_settings;;
-      6) menu_https; continue;;
+      6) ssl_choice_menu; continue;;
       7) systemctl start "$SERVICE";;
       8) systemctl stop "$SERVICE";;
       9) confirm_restart;;
