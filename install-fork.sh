@@ -341,16 +341,16 @@ apply_https() {
     warn "Something already listens on port 80; stop it first (the challenge binds it)."
     return
   fi
-  local acme_home="${ACME_HOME:-$HOME/.acme.sh}" acme
+  local acme_home="$HOME/.acme.sh" acme
   if [[ ! -x "$acme_home/acme.sh" ]]; then
     say "Installing acme.sh ..."
-    if ! curl -fsSL --max-time 60 "https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh" -o /tmp/acme-install.sh \
-      && ! curl -fsSL --max-time 60 https://get.acme.sh -o /tmp/acme-install.sh; then
-      warn "Could not download acme.sh; aborting certificate setup."
+    # Official one-liner form; --install only works from a cloned repo dir.
+    if ! curl -fsSL --max-time 60 https://get.acme.sh | sh -s "email=$email" >/dev/null 2>&1 \
+      && ! curl -fsSL --max-time 60 https://raw.githubusercontent.com/acmesh-official/acme.sh/master/acme.sh \
+           | sh -s "email=$email" >/dev/null 2>&1; then
+      warn "acme.sh installation failed; check network to get.acme.sh"
       return
     fi
-    bash /tmp/acme-install.sh --install --home "$acme_home" --accountemail "$email" >/dev/null 2>&1 \
-      || { warn "acme.sh installation failed."; return; }
   fi
   acme="$acme_home/acme.sh"
   say "Requesting certificate for ${domain} (port 80 must stay reachable from the Internet) ..."
