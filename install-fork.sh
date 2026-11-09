@@ -360,13 +360,17 @@ apply_https() {
   fi
   acme="$acme_home/acme.sh"
   say "Requesting certificate for ${domain} (port 80 must stay reachable from the Internet) ..."
-  if ! "$acme" --home "$acme_home" --server letsencrypt --issue --standalone --keylength ec-256 \
-      -d "$domain" > /tmp/acme-issue.log 2>&1; then
+  local rc=0
+  "$acme" --home "$acme_home" --server letsencrypt --issue --standalone --keylength ec-256 \
+      -d "$domain" > /tmp/acme-issue.log 2>&1 || rc=$?
+  # acme.sh exits 2 when a valid cert exists and issuance is skipped.
+  if (( rc != 0 && rc != 2 )); then
     warn "Issuance failed. Last lines:"
     grep -vE "^\s*$" /tmp/acme-issue.log | tail -3 | sed 's/^/    /'
     warn "Check: firewall/cloud security group for port 80, DNS points here, ISP does not block 80."
     return
   fi
+  if (( rc == 2 )); then say "A valid certificate already exists; installing it as-is."; fi
   mkdir -p "$XUI_FOLDER/ssl"
   "$acme" --home "$acme_home" --install-cert -d "$domain" --ecc \
     --key-file "${XUI_FOLDER}/ssl/${domain}.key" \
