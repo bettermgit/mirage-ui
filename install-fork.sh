@@ -4,11 +4,11 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/bettermgit/mirage-ui/main/install-fork.sh | bash
 #
-# Like the 3x-ui original: after installing, the script is placed at
-# /usr/bin/x-ui, so a bare  x-ui  opens the management menu, and
+# Like the 3x-ui original: after installing, this script is placed at
+# /usr/bin/x-ui, so a bare  x-ui  opens the management menu and
 #   x-ui start|stop|restart|status|settings|enable|disable|log|update|uninstall
-# work directly. Non-interactive when stdin is not a terminal or when all
-# answers are provided up front:
+# work directly. Non-interactive when stdin is not a terminal or when answers
+# are provided up front:
 #
 #   FORK_REPO=bettermgit/mirage-ui  Releases to download from
 #   FORK_VERSION=v1.0.1             release tag (default: latest)
@@ -40,16 +40,12 @@ die()  { echo -e "${red}==> $*${plain}" >&2; exit 1; }
 
 is_tty() { [[ -t 0 && -t 1 ]]; }
 
-installed_version() {
-  [[ -f "$VERSION_FILE" ]] && cat "$VERSION_FILE" || echo "unknown"
-}
+installed_version() { [[ -f "$VERSION_FILE" ]] && cat "$VERSION_FILE" || echo "unknown"; }
 
 ask() {
   local __var="$1" __prompt="$2" __default="${3:-}" __val
   while true; do
-    if ! IFS= read -rp "${__prompt}${__default:+ [${__default}]}: " __val; then
-      echo; __val=""
-    fi
+    if ! IFS= read -rp "${__prompt}${__default:+ [${__default}]}: " __val; then echo; __val=""; fi
     __val="${__val:-$__default}"
     [[ -n "$__val" || -n "$__default" ]] || { warn "A value is required."; continue; }
     printf -v "$__var" '%s' "$__val"
@@ -57,17 +53,27 @@ ask() {
   done
 }
 
+confirm_yes() { [[ "${1,,}" =~ ^(y|yes)$ ]]; }
+
 port_in_use() { ss -Hltn 2>/dev/null | awk '{print $4}' | grep -qE "[:.]${1}\$"; }
+
+# Sets PANEL_PORT after a validated prompt (range only; in-use checks differ
+# between fresh install, where nothing listens, and change, where we do).
+read_port() {
+  while true; do
+    ask PANEL_PORT "Please set up the panel port" "$1"
+    [[ "$PANEL_PORT" =~ ^[0-9]+$ ]] && (( PANEL_PORT >= 1 && PANEL_PORT <= 65535 )) && return
+    warn "Invalid port. Enter a number between 1 and 65535."
+  done
+}
 
 # Official flow: y/N customize, N picks a random free port.
 select_panel_port() {
   local confirm=""
   ask confirm "Would you like to customize the Panel Port settings? (If not, a random port will be applied)" "n"
-  if [[ "${confirm,,}" =~ ^(y|yes)$ ]]; then
+  if confirm_yes "$confirm"; then
     while true; do
-      ask PANEL_PORT "Please set up the panel port" "5566"
-      [[ "$PANEL_PORT" =~ ^[0-9]+$ ]] && (( PANEL_PORT >= 1 && PANEL_PORT <= 65535 )) || \
-        { warn "Invalid port. Enter a number between 1 and 65535."; continue; }
+      read_port 5566
       if port_in_use "$PANEL_PORT"; then
         warn "Port ${PANEL_PORT} is already in use. Choose another panel port."
         continue
@@ -91,67 +97,51 @@ ask_creds() {
   [[ -n "$SEEDED_USER" ]] && return 0
   local fix=""
   ask fix "Set your own username and password? (N = random, shown at the end)" "n"
-  [[ "${fix,,}" =~ ^(y|yes)$ ]] || return 0
+  confirm_yes "$fix" || return 0
   ask SEEDED_USER "Username" "admin"
   local p1="" p2=""
   while true; do
-    if ! IFS= read -rsp "Password (min 8 chars, hidden): " p1; then echo; exit 1; fi
-    echo
-    if ! IFS= read -rsp "Repeat password: " p2; then echo; exit 1; fi
-    echo
+    IFS= read -rsp "Password (min 8 chars, hidden): " p1 || { echo; exit 1; }; echo
+    IFS= read -rsp "Repeat password: " p2 || { echo; exit 1; }; echo
     [[ ${#p1} -ge 8 ]] || { warn "Too short (min 8 characters)."; continue; }
     [[ "$p1" == "$p2" ]] || { warn "Passwords do not match."; continue; }
-    SEEDED_PASS="$p1"
-    return 0
+    SEEDED_PASS="$p1"; return 0
   done
 }
 
-server_ip() {
-  curl -fsS --max-time 5 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}'
-}
+server_ip() { curl -fsS --max-time 5 https://api.ipify.org 2>/dev/null || hostname -I | awk '{print $1}'; }
 
 current_port() {
   [[ -f "$UNIT_FILE" ]] || { echo "2053"; return; }
   grep -m1 -oE 'XUI_PORT=[0-9]+' "$UNIT_FILE" | cut -d= -f2 || echo 2053
 }
 
-panel_login() {
-  local base="http://127.0.0.1:$1" jar tok out
-  jar="$(mktemp)"
-  tok="$(curl -s -m 10 -c "$jar" "$base/csrf-token" | sed -n 's/.*"obj":"\([^"]*\)".*/\1/p')"
-  out="$(curl -s -m 10 -b "$jar" -X POST "$base/login" -H "X-CSRF-Token: $tok" \
-    --data-urlencode "username=$2" --data-urlencode "password=$3" || true)"
-  rm -f "$jar"
-  grep -q '"success":true' <<<"$out"
-}
-
-panel_post() {
-  local port="$1" user="$2" pass="$3" path="$4" body="$5"
+# panel_api <port> <user> <pass> <path> [json-body]: login with CSRF and POST
+# the path; prints the response. No body = login check only.
+panel_api() {
+  local port="$1" user="$2" pass="$3" path="$4" body="${5:-}"
   local base="http://127.0.0.1:$port" jar tok
   jar="$(mktemp)"
   tok="$(curl -s -m 10 -c "$jar" "$base/csrf-token" | sed -n 's/.*"obj":"\([^"]*\)".*/\1/p')"
   curl -s -m 10 -b "$jar" -c "$jar" -X POST "$base/login" -H "X-CSRF-Token: $tok" \
-    --data-urlencode "username=$user" --data-urlencode "password=$pass" >/dev/null
-  tok="$(curl -s -m 10 -b "$jar" -c "$jar" "$base/csrf-token" | sed -n 's/.*"obj":"\([^"]*\)".*/\1/p')"
-  curl -s -m 15 -b "$jar" -X POST "$base$path" -H "X-CSRF-Token: $tok" \
-    -H "Content-Type: application/json" -d "$body"
+    --data-urlencode "username=$user" --data-urlencode "password=$pass"
+  if [[ -n "$body" ]]; then
+    tok="$(curl -s -m 10 -b "$jar" -c "$jar" "$base/csrf-token" | sed -n 's/.*"obj":"\([^"]*\)".*/\1/p')"
+    curl -s -m 15 -b "$jar" -X POST "$base$path" -H "X-CSRF-Token: $tok" \
+      -H "Content-Type: application/json" -d "$body"
+  fi
   rm -f "$jar"
 }
 
-json_escape() {
-  local s="$1"
-  s="${s//\\/\\\\}"
-  s="${s//\"/\\\"}"
-  printf '%s' "$s"
-}
+panel_login() { local out; out="$(panel_api "$1" "$2" "$3" "")"; grep -q '"success":true' <<<"$out"; }
+
+json_escape() { local s="$1"; s="${s//\\/\\\\}"; s="${s//\"/\\\"}"; printf '%s' "$s"; }
 
 # configure_panel_https <crt> <key>: write only these two settings rows.
 # The full settings API is unsafe here: its webPort reflects the DB value,
 # not the XUI_PORT override, and a full roundtrip would persist that drift.
 configure_panel_https() {
-  local crt="$1" key="$2"
-  local db="${XUI_DB_FOLDER:-$XUI_FOLDER}/x-ui.db"
-  CRT="$crt" KEY="$key" DB="$db" python3 - <<'PY'
+  CRT="$1" KEY="$2" DB="${XUI_DB_FOLDER:-$XUI_FOLDER}/x-ui.db" python3 - <<'PY'
 import os, sqlite3
 db = sqlite3.connect(os.environ["DB"])
 for k, v in (("webCertFile", os.environ["CRT"]), ("webKeyFile", os.environ["KEY"])):
@@ -162,7 +152,11 @@ PY
 }
 
 apply_cert_paths() {
-  local crt="$1" key="$2"
+  local crt="$1" key="$2" port
+  if ! command -v python3 >/dev/null; then
+    warn "python3 missing; set cert paths manually in Settings (files: ${crt})."
+    return 1
+  fi
   say "Applying the certificate in panel settings ..."
   if ! configure_panel_https "$crt" "$key"; then
     warn "Could not write the settings; set the paths manually in Settings (files: ${crt})."
@@ -171,7 +165,7 @@ apply_cert_paths() {
   # Apply now regardless of the renewal hook; acme.sh reloadcmd also restarts later.
   systemctl restart "$SERVICE"
   sleep 8
-  local port; port="$(current_port)"
+  port="$(current_port)"
   if curl -ks -o /dev/null -m 10 "https://127.0.0.1:${port}/"; then
     say "HTTPS is live."
   else
@@ -187,7 +181,7 @@ need_root_checks() {
 
 detect_asset() {
   case "$(uname -m)" in
-    x86_64)  ASSET=x-ui-linux-amd64;  XRAY_ASSET=Xray-linux-64.zip       ;;
+    x86_64)  ASSET=x-ui-linux-amd64;  XRAY_ASSET=Xray-linux-64.zip        ;;
     aarch64) ASSET=x-ui-linux-arm64;  XRAY_ASSET=Xray-linux-arm64-v8a.zip ;;
     *) die "Unsupported architecture: $(uname -m) (amd64/arm64 only)" ;;
   esac
@@ -195,9 +189,8 @@ detect_asset() {
 
 # install_xray_core: best effort; the panel also offers it later in Settings.
 install_xray_core() {
-  local dest="${XUI_FOLDER}/bin/xray-linux-amd64"
+  local dest="${XUI_FOLDER}/bin/xray-linux-amd64" tmp
   [[ "$(uname -m)" == aarch64 ]] && dest="${XUI_FOLDER}/bin/xray-linux-arm64"
-  local tmp
   tmp="$(mktemp -d)"
   say "Downloading xray core (latest release) ..."
   if ! curl -fsSL --max-time 120 \
@@ -206,9 +199,10 @@ install_xray_core() {
     warn "xray download failed; skipped (panel Settings can install it later)."
     return 0
   fi
+  # The geo .dat files must ship with the binary: panel routing uses geoip:/geosite:
+  # rules and xray refuses to start without them.
   if command -v unzip >/dev/null; then
     unzip -p "$tmp/xray.zip" xray > "$dest" || { rm -rf "$tmp"; warn "xray extract failed; skipped."; return 0; }
-    # xray routing rules need the geo .dat files; config.json is panel-owned.
     unzip -o -q "$tmp/xray.zip" "*.dat" -d "${XUI_FOLDER}/bin/" 2>/dev/null || true
   elif command -v python3 >/dev/null; then
     python3 - "$tmp/xray.zip" "$dest" "${XUI_FOLDER}/bin" <<'PY' || { rm -rf "$tmp"; warn "xray extract failed; skipped."; return 0; }
@@ -238,8 +232,7 @@ download_binary() {
     git clone --depth 1 "https://github.com/${FORK_REPO}.git" "$TMP_SRC"
     ( cd "$TMP_SRC/frontend" && npm ci && npm run build )
     ( cd "$TMP_SRC" && CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o x-ui . )
-    BINARY_SRC="$TMP_SRC/x-ui"
-    SCRIPT_SRC="$TMP_SRC/install-fork.sh"
+    BINARY_SRC="$TMP_SRC/x-ui"; SCRIPT_SRC="$TMP_SRC/install-fork.sh"
     return
   fi
   if [[ "$FORK_VERSION" == "latest" ]]; then
@@ -287,39 +280,34 @@ UNIT
   systemctl daemon-reload
 }
 
-# Like the official post-install card: address, credentials, x-ui commands.
+# Post-install card: address, credentials, x-ui command pointer.
 print_info() {
   local port; port="$(current_port)"
   echo
   echo -e "┌───────────────────────────────────────────────────────┐"
-  echo -e "│  ${blue}Mirage-UI$(installed_version | sed 's/^/ /')${plain}  http://$(server_ip):${port}/"
+  echo -e "│  ${blue}Mirage-UI$(installed_version | sed 's/^/ /')${plain}"
+  echo -e "│  Panel URL : ${cyan}http://$(server_ip):${port}/${plain}"
   if [[ -n "${SHOW_USER:-}" ]]; then
-    echo -e "│  Username: ${SHOW_USER}"
-    echo -e "│  Password: ${SHOW_PASS}"
+    echo -e "│  Username  : ${SHOW_USER}"
+    echo -e "│  Password  : ${SHOW_PASS}"
   fi
-  echo -e "│                                                       │"
-  echo -e "│  ${blue}x-ui${plain}         - Admin Management Script              │"
-  echo -e "│  ${blue}x-ui start${plain}   - Start                                │"
-  echo -e "│  ${blue}x-ui stop${plain}    - Stop                                 │"
-  echo -e "│  ${blue}x-ui restart${plain} - Restart                              │"
-  echo -e "│  ${blue}x-ui status${plain}  - Current Status                        │"
-  echo -e "│  ${blue}x-ui log${plain}     - Check logs                            │"
-  echo -e "│  ${blue}x-ui update${plain}  - Update to latest release              │"
+  echo -e "│  Manage    : ${blue}x-ui${plain} (menu) / x-ui start|stop|status|log ..."
+  echo -e "│  HTTPS     : ${blue}x-ui${plain} menu option 6 (Let's Encrypt, one shot)"
   echo -e "└───────────────────────────────────────────────────────┘"
-  echo "  Open ports in firewall AND cloud security group."
+  echo "  Open the port in firewall AND cloud security group."
 }
 
 collect_creds_after_install() {
   if [[ -n "$SEEDED_USER" ]]; then
     SHOW_USER="$SEEDED_USER"; SHOW_PASS="$SEEDED_PASS"
-  else
-    local creds
-    # --since: a reinstall over the same unit must not print the previous
-    # first-run credentials found further down the journal.
-    creds="$(journalctl -u "$SERVICE" --since "-2 min" --no-pager 2>/dev/null | grep -m1 'Username:')"
-    SHOW_USER="$(sed -n 's/.*Username: *\([^ ]*\).*/\1/p' <<<"$creds")"
-    SHOW_PASS="$(sed -n 's/.*Password: *\([^ ]*\).*/\1/p' <<<"$creds")"
+    return
   fi
+  local creds
+  # --since: a reinstall over the same unit must not print the previous
+  # first-run credentials found further down the journal.
+  creds="$(journalctl -u "$SERVICE" --since "-2 min" --no-pager 2>/dev/null | grep -m1 'Username:')"
+  SHOW_USER="$(sed -n 's/.*Username: *\([^ ]*\).*/\1/p' <<<"$creds")"
+  SHOW_PASS="$(sed -n 's/.*Password: *\([^ ]*\).*/\1/p' <<<"$creds")"
 }
 
 # Install this script itself as the management command (official pattern).
@@ -342,7 +330,7 @@ install_manager() {
 # ---------- HTTPS ----------
 
 apply_https() {
-  local domain email
+  local domain email acme_home="$HOME/.acme.sh" acme rc=0
   echo "Free HTTPS certificate via Let's Encrypt (acme.sh, HTTP-01 challenge)."
   echo "The domain must already resolve to this server and port 80 must be free."
   ask domain "Domain"
@@ -353,7 +341,6 @@ apply_https() {
     warn "Something already listens on port 80; stop it first (the challenge binds it)."
     return
   fi
-  local acme_home="$HOME/.acme.sh" acme
   if [[ ! -x "$acme_home/acme.sh" ]]; then
     say "Installing acme.sh ..."
     # Official one-liner form; --install only works from a cloned repo dir.
@@ -366,7 +353,6 @@ apply_https() {
   fi
   acme="$acme_home/acme.sh"
   say "Requesting certificate for ${domain} (port 80 must stay reachable from the Internet) ..."
-  local rc=0
   "$acme" --home "$acme_home" --server letsencrypt --issue --standalone --keylength ec-256 \
       -d "$domain" > /tmp/acme-issue.log 2>&1 || rc=$?
   # acme.sh exits 2 when a valid cert exists and issuance is skipped.
@@ -385,7 +371,7 @@ apply_https() {
     || { warn "install-cert failed; see ${acme_home}/account.conf"; return; }
   chmod 600 "${XUI_FOLDER}/ssl/${domain}.key" "${XUI_FOLDER}/ssl/${domain}.crt" 2>/dev/null || true
   apply_cert_paths "${XUI_FOLDER}/ssl/${domain}.crt" "${XUI_FOLDER}/ssl/${domain}.key"
-  echo -e "  Panel URL : ${cyan}https://${domain}:${port}/${plain}"
+  echo -e "  Panel URL : ${cyan}https://${domain}:$(current_port)/${plain}"
   echo "Renewals run automatically (acme.sh cron) and reload this service."
 }
 
@@ -405,7 +391,7 @@ ssl_choice_menu() {
       ask key "Private key file"
       [[ -s "$crt" && -s "$key" ]] || { warn "File not found."; return; }
       apply_cert_paths "$crt" "$key";;
-    *) echo "Skipped. HTTPS can be set anytime from the management menu (option 6)."; return;;
+    *) echo "Skipped. HTTPS can be set anytime from the management menu (option 6)";;
   esac
 }
 
@@ -420,14 +406,11 @@ install_fresh() {
     ask_creds
   else
     PANEL_PORT="${PANEL_PORT:-5566}"
-  fi
-  [[ "$PANEL_PORT" =~ ^[0-9]+$ ]] && (( PANEL_PORT >= 1 && PANEL_PORT <= 65535 )) \
-    || die "XUI_PANEL_PORT must be a number between 1 and 65535."
-  if [[ -n "$SEEDED_PASS" && ${#SEEDED_PASS} -lt 8 ]]; then
-    die "XUI_PASSWORD must be at least 8 characters."
-  fi
-  if [[ ( -n "$SEEDED_USER" && -z "$SEEDED_PASS" ) || ( -z "$SEEDED_USER" && -n "$SEEDED_PASS" ) ]]; then
-    die "Set both XUI_USERNAME and XUI_PASSWORD, or neither."
+    [[ "$PANEL_PORT" =~ ^[0-9]+$ ]] && (( PANEL_PORT >= 1 && PANEL_PORT <= 65535 )) \
+      || die "XUI_PANEL_PORT must be a number between 1 and 65535."
+    [[ -z "$SEEDED_PASS" || ${#SEEDED_PASS} -ge 8 ]] || die "XUI_PASSWORD must be at least 8 characters."
+    [[ -n "$SEEDED_USER" || -z "$SEEDED_PASS" ]] || die "Set both XUI_USERNAME and XUI_PASSWORD, or neither."
+    [[ -n "$SEEDED_PASS" || -z "$SEEDED_USER" ]] || die "Set both XUI_USERNAME and XUI_PASSWORD, or neither."
   fi
   detect_asset
   download_binary "${1:-}"
@@ -450,28 +433,21 @@ install_fresh() {
   install_manager "$script_src"
   say "Mirage-UI $(installed_version) installation finished, it is running now..."
   print_info
-  if is_tty; then
-    echo
-    ssl_choice_menu
-  fi
+  if is_tty; then echo; ssl_choice_menu; fi
 }
 
-# ---------- menu actions ----------
+# ---------- management ----------
 
 confirm_restart() {
   local r=""
   ask r "Restart the panel, Attention: Restarting the panel will also restart xray" "y"
-  [[ "${r,,}" =~ ^(y|yes)$ ]] && systemctl restart "$SERVICE"
+  # if/then, not "&& systemctl": a bare && list returning false under
+  # set -e would end the menu when the user answers n.
+  if confirm_yes "$r"; then systemctl restart "$SERVICE"; fi
 }
 
 change_port() {
-  local cur; cur="$(current_port)"
-  while true; do
-    ask PANEL_PORT "Please set up the panel port" "$cur"
-    [[ "$PANEL_PORT" =~ ^[0-9]+$ ]] && (( PANEL_PORT >= 1 && PANEL_PORT <= 65535 )) || \
-      { warn "Invalid port."; continue; }
-    break
-  done
+  read_port "$(current_port)"
   write_unit
   confirm_restart
   echo -e "Your Panel Port is: ${PANEL_PORT}"
@@ -481,19 +457,20 @@ read_login() {
   echo "Enter the current panel login (verified against the panel; nothing is stored)."
   LOGIN_U=""; LOGIN_P=""
   read -rp "Username: " LOGIN_U
-  if ! IFS= read -rsp "Password (hidden): " LOGIN_P; then echo; return 1; fi
+  IFS= read -rsp "Password (hidden): " LOGIN_P || { echo; return 1; }
   echo
   panel_login "$(current_port)" "$LOGIN_U" "$LOGIN_P"
 }
 
 change_credentials() {
-  local port; port="$(current_port)"
+  local port nu p1="" p2="" body res
+  port="$(current_port)"
   if ! read_login; then
     warn "Login rejected, or panel unreachable on port ${port}."
     warn "Forgot it? Reset: ${BINARY} setting -username <u> -password <p> && systemctl restart ${SERVICE}"
     return
   fi
-  local nu="$LOGIN_U" p1="" p2=""
+  nu="$LOGIN_U"
   read -rp "New username [${LOGIN_U}]: " x; [[ -n "$x" ]] && nu="$x"
   while true; do
     IFS= read -rsp "New password (min 8, hidden; Enter keeps current): " p1; echo
@@ -503,10 +480,9 @@ change_credentials() {
     [[ "$p1" == "$p2" ]] || { warn "Passwords do not match."; continue; }
     break
   done
-  local body res
   body="$(printf '{"oldUsername":"%s","oldPassword":"%s","newUsername":"%s","newPassword":"%s"}' \
     "$(json_escape "$LOGIN_U")" "$(json_escape "$LOGIN_P")" "$(json_escape "$nu")" "$(json_escape "$p1")")"
-  res="$(panel_post "$port" "$LOGIN_U" "$LOGIN_P" /panel/api/setting/updateUser "$body")"
+  res="$(panel_api "$port" "$LOGIN_U" "$LOGIN_P" /panel/api/setting/updateUser "$body")"
   if grep -q '"success":true' <<<"$res"; then
     say "Login updated. Use ${nu} and the new password on the next sign-in."
   else
@@ -520,6 +496,11 @@ show_settings() {
   echo "  Folder     : ${XUI_FOLDER}"
   echo "  Service    : ${SERVICE} ($(systemctl is-active "$SERVICE" 2>/dev/null || echo stopped), autostart: $(systemctl is-enabled "$SERVICE" 2>/dev/null || echo ?))"
   echo "  Panel URL  : http://$(server_ip):$(current_port)/"
+  local crt
+  crt="$(DB="$XUI_FOLDER/x-ui.db" python3 -c 'import os,sqlite3; print((sqlite3.connect(os.environ["DB"]).execute("select value from settings where key=?", ("webCertFile",)).fetchone() or ("",))[0])' 2>/dev/null || true)"
+  if [[ -n "$crt" && -s "$crt" ]]; then
+    echo "  Certificate: ${crt} ($(openssl x509 -enddate -noout -in "$crt" 2>/dev/null | cut -d= -f2 || echo unknown))"
+  fi
 }
 
 update_fork() {
@@ -566,24 +547,23 @@ before_show_menu() {
 
 show_menu() {
   clear 2>/dev/null || true
-  echo -e "╔────────────────────────────────────────────────╗"
-  echo -e "║  ${green}Mirage-UI Management$(installed_version | sed 's/^/ /' | cut -c1-24)${plain}"
-  echo -e "║  $(systemctl is-active "$SERVICE" 2>/dev/null || echo stopped)  port $(current_port)  ${XUI_FOLDER}"
-  echo -e "╟────────────────────────────────────────────────╢"
-  echo -e "║  ${green} 1.${plain} Update to latest release                 ║"
-  echo -e "║  ${green} 2.${plain} Uninstall                                ║"
-  echo -e "╟────────────────────────────────────────────────╢"
-  echo -e "║  ${green} 3.${plain} Reset Username & Password                ║"
-  echo -e "║  ${green} 4.${plain} Change Port                              ║"
-  echo -e "║  ${green} 5.${plain} View Current Settings                    ║"
-  echo -e "║  ${green} 6.${plain} SSL Certificate (issue / renew / set)    ║"
-  echo -e "╟────────────────────────────────────────────────╢"
-  echo -e "║  ${green} 7.${plain} Start      ${green} 8.${plain} Stop                     ║"
-  echo -e "║  ${green} 9.${plain} Restart    ${green}10.${plain} Check Status               ║"
-  echo -e "║  ${green}11.${plain} Check Logs ${green}12.${plain} Enable/Disable Autostart   ║"
-  echo -e "╟────────────────────────────────────────────────╢"
-  echo -e "║  ${green} 0.${plain} Exit Script                              ║"
-  echo -e "╚════════════════════════════════════════════════╝"
+  echo -e "╔══════════════════════════════════════════════════╗"
+  echo -e "║  ${green}Mirage-UI$(installed_version | sed 's/^/ /') Management Script${plain}"
+  echo -e "║  $(systemctl is-active "$SERVICE" 2>/dev/null || echo stopped)  http://$(server_ip):$(current_port)/"
+  echo -e "╟──────────────────────────────────────────────────╢"
+  echo -e "║  ${green} 1.${plain} Update to latest release"
+  echo -e "║  ${green} 2.${plain} Uninstall"
+  echo -e "║  ${green} 3.${plain} Reset Username & Password"
+  echo -e "║  ${green} 4.${plain} Change Port"
+  echo -e "║  ${green} 5.${plain} View Current Settings"
+  echo -e "║  ${green} 6.${plain} SSL Certificate (issue / renew / set)"
+  echo -e "╟──────────────────────────────────────────────────╢"
+  echo -e "║  ${green} 7.${plain} Start          ${green} 8.${plain} Stop"
+  echo -e "║  ${green} 9.${plain} Restart        ${green}10.${plain} Check Status"
+  echo -e "║  ${green}11.${plain} Check Logs     ${green}12.${plain} Enable/Disable Autostart"
+  echo -e "╟──────────────────────────────────────────────────╢"
+  echo -e "║  ${green} 0.${plain} Exit Script"
+  echo -e "╚══════════════════════════════════════════════════╝"
 }
 
 menu() {
