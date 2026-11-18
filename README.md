@@ -76,7 +76,7 @@ Both also work on the Docker image (`docker run -e XUI_USERNAME=... -e
 XUI_PASSWORD=...`) and apply only while the database has no users — they can
 never overwrite an existing account.
 
-The installer & `x-ui` menu speak Chinese by default; run with `XUI_LANG=en`
+The installer & `m-ui` menu speak Chinese by default; run with `XUI_LANG=en`
 for English prompts (the original 3x-ui wording).
 
 ### Interactive mode & management menu

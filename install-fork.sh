@@ -9,8 +9,8 @@
 # 语言：默认中文交互；XUI_LANG=en 切换为英文。
 #
 # Like the 3x-ui original: after installing, this script is placed at
-# /usr/bin/x-ui, so a bare  x-ui  opens the management menu and
-#   x-ui start|stop|restart|status|settings|enable|disable|log|update|uninstall
+# /usr/bin/m-ui, so a bare  m-ui  opens the management menu and
+#   m-ui start|stop|restart|status|settings|enable|disable|log|update|uninstall
 # work directly. Non-interactive when stdin is not a terminal or when all
 # answers are provided up front:
 #
@@ -94,15 +94,15 @@ declare -A EN=(
   [installing_into]="Installing into %s ..."
   [starting_svc]="Starting service (port %s) ..."
   [finished]="Mirage-UI %s installation finished, it is running now..."
-  [mgr_installed]="Management command installed: run  x-ui  for the menu."
+  [mgr_installed]="Management command installed: run  m-ui  for the menu."
   [mgr_fetch]="Could not fetch the management script; re-run the installer file for the menu."
   [not_installed]="Not installed yet; run the installer first."
-  [already_installed]="Already installed. Run x-ui from a terminal for the management menu."
+  [already_installed]="Already installed. Run m-ui from a terminal for the management menu."
   [pi_url]="Panel URL"
   [pi_user]="Username"
   [pi_pass]="Password"
   [pi_manage]="Manage"
-  [pi_manage_desc]="(menu) / x-ui start|stop|status|log ..."
+  [pi_manage_desc]="(menu) / m-ui start|stop|status|log ..."
   [pi_https]="HTTPS"
   [pi_https_desc]="(Let's Encrypt, one shot)"
   [pi_firewall]="  Open the port in firewall AND cloud security group."
@@ -216,7 +216,7 @@ declare -A ZH=(
   [installing_into]="正在安装到 %s ..."
   [starting_svc]="正在启动服务（端口 %s）..."
   [finished]="Mirage-UI %s 安装完成，服务已在运行..."
-  [mgr_installed]="管理命令已安装：运行  x-ui  即可打开菜单。"
+  [mgr_installed]="管理命令已安装：运行  m-ui  即可打开菜单。"
   [mgr_fetch]="无法获取管理脚本；重新运行安装脚本文件即可打开菜单。"
   [not_installed]="尚未安装；请先运行安装脚本。"
   [already_installed]="已安装。在终端里运行 x-ui 可打开管理菜单。"
@@ -224,7 +224,7 @@ declare -A ZH=(
   [pi_user]="用户名"
   [pi_pass]="密码"
   [pi_manage]="管理"
-  [pi_manage_desc]="（菜单）/ x-ui start|stop|status|log …"
+  [pi_manage_desc]="（菜单）/ m-ui start|stop|status|log …"
   [pi_https]="HTTPS"
   [pi_https_desc]="（一键申请 Let's Encrypt 证书）"
   [pi_firewall]="  请在防火墙和云安全组中同时放行该端口。"
@@ -580,7 +580,7 @@ collect_creds_after_install() {
 
 # Install this script itself as the management command (official pattern).
 install_manager() {
-  local src="${1:-}" mgr=/usr/bin/x-ui
+  local src="${1:-}" mgr=/usr/bin/m-ui
   if [[ -z "$src" && -f "$0" && "$0" != "bash" && "$(readlink -f "$0" 2>/dev/null)" != "$mgr" ]]; then
     src="$0"
   fi
@@ -592,6 +592,7 @@ install_manager() {
   fi
   install -m 0755 "$src" "$mgr"
   sed -i "s|^XUI_FOLDER_DEFAULT=.*|XUI_FOLDER_DEFAULT=${XUI_FOLDER}|;s|^SERVICE_DEFAULT=.*|SERVICE_DEFAULT=${SERVICE}|" "$mgr"
+  rm -f /usr/bin/x-ui   # take over the legacy command name
   say "$(t mgr_installed)"
 }
 
@@ -799,7 +800,7 @@ uninstall() {
   ask wipe "$(fmt uninst_q "$XUI_FOLDER")" ""
   systemctl stop "$SERVICE" 2>/dev/null || true
   systemctl disable "$SERVICE" 2>/dev/null || true
-  rm -f "$UNIT_FILE" /usr/bin/x-ui
+  rm -f "$UNIT_FILE" /usr/bin/x-ui /usr/bin/m-ui
   systemctl daemon-reload
   if [[ "$wipe" == "YES" ]]; then
     rm -rf "$XUI_FOLDER"
@@ -867,37 +868,37 @@ menu() {
 show_usage() {
   if [[ "$L" == en ]]; then
     echo -e "┌───────────────────────────────────────────────────────┐
-│  ${blue}x-ui control menu usages (subcommands):${plain}              │
+│  ${blue}m-ui control menu usages (subcommands):${plain}              │
 │                                                       │
-│  ${blue}x-ui${plain}              - Admin Management Script          │
-│  ${blue}x-ui start${plain}        - Start                            │
-│  ${blue}x-ui stop${plain}         - Stop                             │
-│  ${blue}x-ui restart${plain}      - Restart                          │
-│  ${blue}x-ui status${plain}       - Current Status                   │
-│  ${blue}x-ui settings${plain}     - Current Settings                 │
-│  ${blue}x-ui enable${plain}       - Enable Autostart on OS Startup   │
-│  ${blue}x-ui disable${plain}      - Disable Autostart on OS Startup  │
-│  ${blue}x-ui log${plain}          - Check logs                       │
-│  ${blue}x-ui update${plain}       - Update                           │
-│  ${blue}x-ui install${plain}      - Install                          │
-│  ${blue}x-ui uninstall${plain}    - Uninstall                        │
+│  ${blue}m-ui${plain}              - Admin Management Script          │
+│  ${blue}m-ui start${plain}        - Start                            │
+│  ${blue}m-ui stop${plain}         - Stop                             │
+│  ${blue}m-ui restart${plain}      - Restart                          │
+│  ${blue}m-ui status${plain}       - Current Status                   │
+│  ${blue}m-ui settings${plain}     - Current Settings                 │
+│  ${blue}m-ui enable${plain}       - Enable Autostart on OS Startup   │
+│  ${blue}m-ui disable${plain}      - Disable Autostart on OS Startup  │
+│  ${blue}m-ui log${plain}          - Check logs                       │
+│  ${blue}m-ui update${plain}       - Update                           │
+│  ${blue}m-ui install${plain}      - Install                          │
+│  ${blue}m-ui uninstall${plain}    - Uninstall                        │
 └───────────────────────────────────────────────────────┘"
   else
     echo -e "┌───────────────────────────────────────────────────────┐
-│  ${blue}x-ui 子命令用法：${plain}                                    │
+│  ${blue}m-ui 子命令用法：${plain}                                    │
 │                                                       │
-│  ${blue}x-ui${plain}              - 打开管理菜单                     │
-│  ${blue}x-ui start${plain}        - 启动                             │
-│  ${blue}x-ui stop${plain}         - 停止                             │
-│  ${blue}x-ui restart${plain}      - 重启                             │
-│  ${blue}x-ui status${plain}       - 查看状态                         │
-│  ${blue}x-ui settings${plain}     - 查看当前设置                     │
-│  ${blue}x-ui enable${plain}       - 开启开机自启                     │
-│  ${blue}x-ui disable${plain}      - 关闭开机自启                     │
-│  ${blue}x-ui log${plain}          - 查看日志                         │
-│  ${blue}x-ui update${plain}       - 更新                             │
-│  ${blue}x-ui install${plain}      - 安装                             │
-│  ${blue}x-ui uninstall${plain}    - 卸载                             │
+│  ${blue}m-ui${plain}              - 打开管理菜单                     │
+│  ${blue}m-ui start${plain}        - 启动                             │
+│  ${blue}m-ui stop${plain}         - 停止                             │
+│  ${blue}m-ui restart${plain}      - 重启                             │
+│  ${blue}m-ui status${plain}       - 查看状态                         │
+│  ${blue}m-ui settings${plain}     - 查看当前设置                     │
+│  ${blue}m-ui enable${plain}       - 开启开机自启                     │
+│  ${blue}m-ui disable${plain}      - 关闭开机自启                     │
+│  ${blue}m-ui log${plain}          - 查看日志                         │
+│  ${blue}m-ui update${plain}       - 更新                             │
+│  ${blue}m-ui install${plain}      - 安装                             │
+│  ${blue}m-ui uninstall${plain}    - 卸载                             │
 └───────────────────────────────────────────────────────┘"
   fi
 }
@@ -929,8 +930,11 @@ if [[ "$CMD" == "--from-source" || "$CMD" == "install" || -n "$PANEL_PORT" || ! 
   install_fresh "$CMD"
 elif is_tty; then
   need_root_checks
+  # x-ui-era migration: install m-ui (fresh copy) when missing.
+  [[ -x /usr/bin/m-ui ]] || install_manager ""
   menu
 else
   print_info
+  [[ -x /usr/bin/m-ui ]] || install_manager ""
   warn "$(t already_installed)"
 fi
