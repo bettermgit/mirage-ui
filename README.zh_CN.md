@@ -66,6 +66,9 @@ git clone https://github.com/bettermgit/mirage-ui && cd mirage-ui && bash instal
 XUI_PASSWORD=...`），且只在数据库尚无任何用户时生效——永远无法覆盖已存在的
 账号。
 
+安装器与 `x-ui` 管理菜单**默认中文交互**；设 `XUI_LANG=en` 可切换为英文
+（保留 3x-ui 官方原话）。
+
 ### 交互模式与管理菜单
 
 在终端里直接运行脚本会进入**问答式安装**：询问面板端口（校验范围与占用）、
