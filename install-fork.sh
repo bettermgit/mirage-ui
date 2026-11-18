@@ -44,7 +44,7 @@ VERSION_FILE="${XUI_FOLDER}/version"
 # 服务器 LANG 多为 en_US，无法靠 locale 自动判断，故默认中文；
 # 英文随时可用 XUI_LANG=en 切换。
 L=zh
-case "${XUI_LANG,,}" in en|english) L=en;; esac
+case "${XUI_LANG:-}" in [Ee][Nn]|[Ee]nglish) L=en;; esac
 
 t() {
   local key="$1"
